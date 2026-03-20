@@ -13,4 +13,6 @@ export type EmployeeMonthlyData = {
   actual: MonthlyActual | null;
 };
 
+export type Profile = Tables<"profiles">;
+
 export type UserRole = "super_admin" | "editor" | "viewer";
