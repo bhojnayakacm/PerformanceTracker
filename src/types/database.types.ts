@@ -14,6 +14,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      daily_metrics: {
+        Row: {
+          id: string
+          employee_id: string
+          date: string
+          target_calls: number
+          target_architect_meetings: number
+          target_client_meetings: number
+          target_site_visits: number
+          actual_calls: number
+          actual_architect_meetings: number
+          actual_client_meetings: number
+          actual_site_visits: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          employee_id: string
+          date: string
+          target_calls?: number
+          target_architect_meetings?: number
+          target_client_meetings?: number
+          target_site_visits?: number
+          actual_calls?: number
+          actual_architect_meetings?: number
+          actual_client_meetings?: number
+          actual_site_visits?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          employee_id?: string
+          date?: string
+          target_calls?: number
+          target_architect_meetings?: number
+          target_client_meetings?: number
+          target_site_visits?: number
+          actual_calls?: number
+          actual_architect_meetings?: number
+          actual_client_meetings?: number
+          actual_site_visits?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_metrics_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
           created_at: string

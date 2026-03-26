@@ -6,6 +6,7 @@ export type EmployeeUpdate = TablesUpdate<"employees">;
 
 export type MonthlyTarget = Tables<"monthly_targets">;
 export type MonthlyActual = Tables<"monthly_actuals">;
+export type DailyMetric = Tables<"daily_metrics">;
 
 export type EmployeeMonthlyData = {
   employee: Employee;

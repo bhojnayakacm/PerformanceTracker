@@ -51,16 +51,10 @@ function getDefaultValues(
   data: EmployeeMonthlyData | null
 ): MonthlyDataInput {
   return {
-    target_total_meetings: data?.target?.target_total_meetings ?? 0,
-    target_total_calls: data?.target?.target_total_calls ?? 0,
     target_client_visits: data?.target?.target_client_visits ?? 0,
     target_dispatched_sqft: data?.target?.target_dispatched_sqft ?? 0,
     target_tour_days: data?.target?.target_tour_days ?? 0,
     target_travelling_cities: data?.target?.target_travelling_cities ?? 0,
-    actual_calls: data?.actual?.actual_calls ?? 0,
-    actual_architect_meetings: data?.actual?.actual_architect_meetings ?? 0,
-    actual_client_meetings: data?.actual?.actual_client_meetings ?? 0,
-    actual_site_visits: data?.actual?.actual_site_visits ?? 0,
     actual_client_visits: data?.actual?.actual_client_visits ?? 0,
     actual_dispatched_sqft: data?.actual?.actual_dispatched_sqft ?? 0,
     actual_dispatched_amount: data?.actual?.actual_dispatched_amount ?? 0,
@@ -127,16 +121,16 @@ export function EmployeeDetailSheet({
     });
   }
 
-  // Live-computed total meetings from sub-metrics
-  const watchedArchitect = form.watch("actual_architect_meetings");
-  const watchedClient = form.watch("actual_client_meetings");
-  const watchedSiteVisits = form.watch("actual_site_visits");
-  const totalMeetingsActual =
-    (Number(watchedArchitect) || 0) +
-    (Number(watchedClient) || 0) +
-    (Number(watchedSiteVisits) || 0);
-
   const totalCosting = data?.actual?.total_costing;
+
+  // Read-only daily-synced values
+  const meetingsTarget = data?.target?.target_total_meetings ?? 0;
+  const callsTarget = data?.target?.target_total_calls ?? 0;
+  const actualCalls = data?.actual?.actual_calls ?? 0;
+  const actualArchitect = data?.actual?.actual_architect_meetings ?? 0;
+  const actualClient = data?.actual?.actual_client_meetings ?? 0;
+  const actualSiteVisits = data?.actual?.actual_site_visits ?? 0;
+  const totalMeetingsActual = actualArchitect + actualClient + actualSiteVisits;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -156,52 +150,40 @@ export function EmployeeDetailSheet({
               onSubmit={form.handleSubmit(onSubmit)}
               className="space-y-6 px-4 pb-4"
             >
-              {/* ── Meetings & Calls ── */}
+              {/* ── Meetings & Calls (read-only, synced from Daily Logs) ── */}
               <section>
                 <SectionHeader title="Meetings & Calls" />
-                <ColumnHeaders />
-                <div className="space-y-2">
-                  <div className="grid grid-cols-[1fr_100px_100px] items-center gap-3 px-1">
-                    <Label className="text-sm">Total Meetings</Label>
-                    <Input
-                      type="number"
-                      {...form.register("target_total_meetings")}
-                      disabled={!canEditTargets}
-                      className="text-right text-sm"
-                    />
-                    <span className="text-right text-sm font-medium pr-1">
-                      {totalMeetingsActual || "—"}
-                    </span>
+                <div className="rounded-md border border-dashed border-muted-foreground/30 p-3 mb-3">
+                  <p className="text-xs text-muted-foreground mb-3">
+                    These values are auto-calculated from{" "}
+                    <span className="font-medium text-foreground">Daily Logs</span>.
+                    Edit them on the Daily Logs page.
+                  </p>
+                  <div className="grid grid-cols-[1fr_80px_80px] gap-2 text-sm">
+                    <span className="text-xs font-medium text-muted-foreground">Metric</span>
+                    <span className="text-xs font-medium text-muted-foreground text-right">Target</span>
+                    <span className="text-xs font-medium text-muted-foreground text-right">Actual</span>
+
+                    <span>Total Meetings</span>
+                    <span className="text-right font-medium">{meetingsTarget || "—"}</span>
+                    <span className="text-right font-medium">{totalMeetingsActual || "—"}</span>
+
+                    <span>Total Calls</span>
+                    <span className="text-right font-medium">{callsTarget || "—"}</span>
+                    <span className="text-right font-medium">{actualCalls || "—"}</span>
+
+                    <span className="text-muted-foreground pl-3">Architect Meetings</span>
+                    <span className="text-right text-muted-foreground">—</span>
+                    <span className="text-right">{actualArchitect || "—"}</span>
+
+                    <span className="text-muted-foreground pl-3">Client Meetings</span>
+                    <span className="text-right text-muted-foreground">—</span>
+                    <span className="text-right">{actualClient || "—"}</span>
+
+                    <span className="text-muted-foreground pl-3">Site Visits</span>
+                    <span className="text-right text-muted-foreground">—</span>
+                    <span className="text-right">{actualSiteVisits || "—"}</span>
                   </div>
-                  <FieldRow
-                    label="Total Calls"
-                    targetField="target_total_calls"
-                    actualField="actual_calls"
-                    form={form}
-                    canEditTargets={canEditTargets}
-                    canEdit={canEdit}
-                  />
-                  <FieldRow
-                    label="Architect Meetings"
-                    actualField="actual_architect_meetings"
-                    form={form}
-                    canEditTargets={canEditTargets}
-                    canEdit={canEdit}
-                  />
-                  <FieldRow
-                    label="Client Meetings"
-                    actualField="actual_client_meetings"
-                    form={form}
-                    canEditTargets={canEditTargets}
-                    canEdit={canEdit}
-                  />
-                  <FieldRow
-                    label="Site Visits"
-                    actualField="actual_site_visits"
-                    form={form}
-                    canEditTargets={canEditTargets}
-                    canEdit={canEdit}
-                  />
                 </div>
               </section>
 

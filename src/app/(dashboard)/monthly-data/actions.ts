@@ -52,6 +52,7 @@ export async function saveMonthlyData(
     const data = parsed.data;
 
     // Upsert targets (super_admin only)
+    // Note: target_total_meetings & target_total_calls are now auto-synced from daily_metrics
     if (role === "super_admin") {
       const { error: targetError } = await supabase
         .from("monthly_targets")
@@ -60,8 +61,6 @@ export async function saveMonthlyData(
             employee_id: employeeId,
             month,
             year,
-            target_total_meetings: data.target_total_meetings,
-            target_total_calls: data.target_total_calls,
             target_client_visits: data.target_client_visits,
             target_dispatched_sqft: data.target_dispatched_sqft,
             target_tour_days: data.target_tour_days,
@@ -74,6 +73,8 @@ export async function saveMonthlyData(
     }
 
     // Upsert actuals (super_admin and editor)
+    // Note: actual_calls, actual_architect_meetings, actual_client_meetings,
+    //       actual_site_visits are now auto-synced from daily_metrics
     const cities = data.actual_travelling_cities
       .split(",")
       .map((s) => s.trim())
@@ -86,10 +87,6 @@ export async function saveMonthlyData(
           employee_id: employeeId,
           month,
           year,
-          actual_calls: data.actual_calls,
-          actual_architect_meetings: data.actual_architect_meetings,
-          actual_client_meetings: data.actual_client_meetings,
-          actual_site_visits: data.actual_site_visits,
           actual_client_visits: data.actual_client_visits,
           actual_dispatched_sqft: data.actual_dispatched_sqft,
           actual_dispatched_amount: data.actual_dispatched_amount,
