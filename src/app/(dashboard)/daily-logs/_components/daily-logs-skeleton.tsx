@@ -13,7 +13,7 @@ export function DailyLogsSkeleton() {
         <Skeleton className="h-8 w-40 rounded-md" />
       </div>
       {/* Table */}
-      <Card>
+      <Card className="shadow-sm">
         <CardContent className="p-0">
           <div className="space-y-0">
             <div className="flex gap-4 p-3 border-b">

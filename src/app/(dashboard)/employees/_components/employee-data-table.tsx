@@ -14,6 +14,7 @@ import { Plus, Search, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -109,11 +110,12 @@ export function EmployeeDataTable({ data, userRole }: Props) {
       </div>
 
       {/* Table */}
-      <div className="rounded-lg border">
-        <Table>
+      <Card className="shadow-sm overflow-hidden">
+        <CardContent className="p-0">
+          <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
+              <TableRow key={headerGroup.id} className="bg-muted/30 hover:bg-muted/30">
                 {headerGroup.headers.map((header) => (
                   <TableHead key={header.id}>
                     {header.isPlaceholder
@@ -161,7 +163,8 @@ export function EmployeeDataTable({ data, userRole }: Props) {
             )}
           </TableBody>
         </Table>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Pagination */}
       {table.getPageCount() > 1 && (

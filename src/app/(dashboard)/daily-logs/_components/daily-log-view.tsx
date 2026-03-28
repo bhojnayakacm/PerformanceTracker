@@ -227,7 +227,7 @@ export function DailyLogView({
         </div>
 
         {canEdit && dirty.size > 0 && (
-          <Button onClick={handleSave} disabled={isBusy} size="sm">
+          <Button onClick={handleSave} disabled={isBusy} size="sm" className="shadow-sm">
             {isSaving ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
@@ -239,66 +239,66 @@ export function DailyLogView({
       </div>
 
       {/* ── Data Grid ── */}
-      <Card className={`transition-opacity duration-150 ${isNavigating ? "opacity-50 pointer-events-none" : ""}`}>
+      <Card className={`shadow-sm transition-opacity duration-150 ${isNavigating ? "opacity-50 pointer-events-none" : ""}`}>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b">
+                <tr className="border-b border-border/60">
                   <th
-                    className="text-left p-3 font-medium sticky left-0 bg-background z-10"
+                    className="text-left p-3 font-medium sticky left-0 bg-card z-10"
                     rowSpan={2}
                   >
                     Employee
                   </th>
                   <th
-                    className="text-center px-2 pt-2 pb-1 font-medium border-l"
+                    className="text-center px-2 pt-2.5 pb-1 font-medium text-foreground/80 border-l border-border/40"
                     colSpan={2}
                   >
                     Calls
                   </th>
                   <th
-                    className="text-center px-2 pt-2 pb-1 font-medium border-l"
+                    className="text-center px-2 pt-2.5 pb-1 font-medium text-foreground/80 border-l border-border/40"
                     colSpan={2}
                   >
                     Arch. Meetings
                   </th>
                   <th
-                    className="text-center px-2 pt-2 pb-1 font-medium border-l"
+                    className="text-center px-2 pt-2.5 pb-1 font-medium text-foreground/80 border-l border-border/40"
                     colSpan={2}
                   >
                     Client Meetings
                   </th>
                   <th
-                    className="text-center px-2 pt-2 pb-1 font-medium border-l"
+                    className="text-center px-2 pt-2.5 pb-1 font-medium text-foreground/80 border-l border-border/40"
                     colSpan={2}
                   >
                     Site Visits
                   </th>
                 </tr>
-                <tr className="border-b bg-muted/50">
-                  <th className="text-center px-1 py-1 text-xs text-muted-foreground font-normal border-l">
+                <tr className="border-b border-border/60">
+                  <th className="text-center px-1 py-1.5 text-xs text-muted-foreground font-normal border-l border-border/40 bg-muted/40">
                     Tgt
                   </th>
-                  <th className="text-center px-1 py-1 text-xs text-muted-foreground font-normal">
+                  <th className="text-center px-1 py-1.5 text-xs text-muted-foreground font-normal">
                     Act
                   </th>
-                  <th className="text-center px-1 py-1 text-xs text-muted-foreground font-normal border-l">
+                  <th className="text-center px-1 py-1.5 text-xs text-muted-foreground font-normal border-l border-border/40 bg-muted/40">
                     Tgt
                   </th>
-                  <th className="text-center px-1 py-1 text-xs text-muted-foreground font-normal">
+                  <th className="text-center px-1 py-1.5 text-xs text-muted-foreground font-normal">
                     Act
                   </th>
-                  <th className="text-center px-1 py-1 text-xs text-muted-foreground font-normal border-l">
+                  <th className="text-center px-1 py-1.5 text-xs text-muted-foreground font-normal border-l border-border/40 bg-muted/40">
                     Tgt
                   </th>
-                  <th className="text-center px-1 py-1 text-xs text-muted-foreground font-normal">
+                  <th className="text-center px-1 py-1.5 text-xs text-muted-foreground font-normal">
                     Act
                   </th>
-                  <th className="text-center px-1 py-1 text-xs text-muted-foreground font-normal border-l">
+                  <th className="text-center px-1 py-1.5 text-xs text-muted-foreground font-normal border-l border-border/40 bg-muted/40">
                     Tgt
                   </th>
-                  <th className="text-center px-1 py-1 text-xs text-muted-foreground font-normal">
+                  <th className="text-center px-1 py-1.5 text-xs text-muted-foreground font-normal">
                     Act
                   </th>
                 </tr>
@@ -377,10 +377,10 @@ function EmployeeRow({
 }) {
   return (
     <tr
-      className={`border-b transition-colors ${
+      className={`border-b border-border/40 transition-colors ${
         isDirty
-          ? "bg-amber-50 dark:bg-amber-950/20"
-          : "hover:bg-muted/30"
+          ? "bg-amber-50/70 dark:bg-amber-950/20"
+          : "hover:bg-muted/20"
       }`}
     >
       <td className="p-3 sticky left-0 bg-inherit z-10">
@@ -434,19 +434,19 @@ function MetricCells({
   canEdit: boolean;
   onChange: (empId: string, field: MetricFields, value: string) => void;
 }) {
-  const inputClass =
-    "h-8 w-16 block mx-auto text-sm px-1 [text-align:center] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
+  const inputBase =
+    "h-8 w-16 block mx-auto text-sm px-1 [text-align:center] border-transparent bg-transparent rounded-md transition-colors hover:border-border/60 hover:bg-white focus-visible:bg-white focus-visible:border-primary/30 focus-visible:ring-2 focus-visible:ring-primary/15 disabled:hover:border-transparent disabled:hover:bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
 
   return (
     <>
-      <td className="px-1 py-1.5 border-l">
+      <td className="px-1 py-1.5 border-l border-border/40 bg-muted/20">
         <Input
           type="number"
           min={0}
           value={targetValue || ""}
           onChange={(e) => onChange(empId, targetField, e.target.value)}
           disabled={!canEditTargets}
-          className={inputClass}
+          className={inputBase}
           placeholder="0"
         />
       </td>
@@ -457,7 +457,7 @@ function MetricCells({
           value={actualValue || ""}
           onChange={(e) => onChange(empId, actualField, e.target.value)}
           disabled={!canEdit}
-          className={inputClass}
+          className={inputBase}
           placeholder="0"
         />
       </td>

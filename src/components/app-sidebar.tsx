@@ -71,6 +71,7 @@ export function AppSidebar() {
                         ? pathname === "/"
                         : pathname.startsWith(item.href)
                     }
+                    className="relative data-active:before:content-[''] data-active:before:absolute data-active:before:inset-y-1 data-active:before:left-0 data-active:before:w-[3px] data-active:before:rounded-full data-active:before:bg-sidebar-primary"
                   >
                     <item.icon />
                     <span>{item.title}</span>

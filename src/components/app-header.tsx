@@ -26,17 +26,32 @@ export function AppHeader({
     router.refresh();
   };
 
+  const initials =
+    userName
+      .split(/[\s@]/)
+      .filter(Boolean)
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "U";
+
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+    <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-card px-4">
       <SidebarTrigger className="-ml-1" />
       <Separator orientation="vertical" className="mr-2 !h-4" />
       <div className="flex-1" />
-      <div className="flex items-center gap-4">
-        <div className="text-right">
+      <div className="flex items-center gap-3">
+        <div className="hidden sm:block text-right">
           <p className="text-sm font-medium leading-none">{userName}</p>
           <p className="text-xs text-muted-foreground capitalize">
             {userRole.replace("_", " ")}
           </p>
+        </div>
+        <div
+          className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-semibold"
+          aria-hidden="true"
+        >
+          {initials}
         </div>
         <Button
           variant="ghost"

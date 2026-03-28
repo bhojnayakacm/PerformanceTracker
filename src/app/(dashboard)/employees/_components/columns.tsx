@@ -76,7 +76,14 @@ export function getColumns(
       cell: ({ row }) => {
         const isActive = row.getValue("is_active") as boolean;
         return (
-          <Badge variant={isActive ? "default" : "outline"}>
+          <Badge
+            variant="secondary"
+            className={
+              isActive
+                ? "bg-emerald-50 text-emerald-700 border-emerald-200/80 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800"
+                : "bg-muted text-muted-foreground"
+            }
+          >
             {isActive ? "Active" : "Inactive"}
           </Badge>
         );
