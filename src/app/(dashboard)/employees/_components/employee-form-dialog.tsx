@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useTransition, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -35,11 +35,21 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
   const form = useForm<EmployeeCreateInput>({
     resolver: zodResolver(employeeCreateSchema),
     defaultValues: {
-      emp_id: employee?.emp_id ?? "",
-      name: employee?.name ?? "",
-      location: employee?.location ?? "",
+      emp_id: "",
+      name: "",
+      location: "",
     },
   });
+
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        emp_id: employee?.emp_id ?? "",
+        name: employee?.name ?? "",
+        location: employee?.location ?? "",
+      });
+    }
+  }, [open, employee, form]);
 
   function onSubmit(values: EmployeeCreateInput) {
     startTransition(async () => {

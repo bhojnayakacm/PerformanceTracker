@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useCallback } from "react";
+import { useState, useTransition, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -14,6 +14,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import type { Employee, UserRole, DailyMetric } from "@/lib/types";
 import { saveDailyMetrics } from "../actions";
 
@@ -79,17 +85,15 @@ function shiftDate(isoDate: string, days: number): string {
   return toLocalDateString(shifted);
 }
 
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-function formatDateDisplay(isoDate: string): string {
+function formatShortDate(isoDate: string): string {
   const [y, m, d] = isoDate.split("-").map(Number);
-  const date = new Date(y, m - 1, d);
-  const day = WEEKDAYS[date.getDay()];
-  return `${day}, ${date.toLocaleDateString("en-IN", {
+  const dt = new Date(y, m - 1, d);
+  return dt.toLocaleDateString("en-GB", {
+    weekday: "short",
     day: "numeric",
     month: "long",
     year: "numeric",
-  })}`;
+  });
 }
 
 /* ── Component ── */
@@ -106,7 +110,24 @@ export function DailyLogView({
   const canEditTargets = userRole === "super_admin";
   const canEdit = userRole !== "viewer";
 
-  // State: employee_id -> entry values
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const selectedDate = useMemo(() => {
+    const [y, m, d] = date.split("-").map(Number);
+    return new Date(y, m - 1, d);
+  }, [date]);
+
+  // Baseline from server — updated after successful save
+  const [originalEntries, setOriginalEntries] = useState<
+    Record<string, EntryValues>
+  >(() => {
+    const init: Record<string, EntryValues> = {};
+    for (const emp of employees) {
+      init[emp.id] = toEntryValues(initialData[emp.id]);
+    }
+    return init;
+  });
+
+  // Draft state: employee_id -> entry values
   const [entries, setEntries] = useState<Record<string, EntryValues>>(() => {
     const init: Record<string, EntryValues> = {};
     for (const emp of employees) {
@@ -115,7 +136,23 @@ export function DailyLogView({
     return init;
   });
 
-  const [dirty, setDirty] = useState<Set<string>>(new Set());
+  // Smart dirty — only true when draft actually differs from server baseline
+  const dirty = useMemo(() => {
+    const dirtySet = new Set<string>();
+    const fields = Object.keys(EMPTY_ENTRY) as MetricFields[];
+    for (const empId of Object.keys(entries)) {
+      const orig = originalEntries[empId];
+      const curr = entries[empId];
+      if (!orig || !curr) continue;
+      for (const f of fields) {
+        if (curr[f] !== orig[f]) {
+          dirtySet.add(empId);
+          break;
+        }
+      }
+    }
+    return dirtySet;
+  }, [entries, originalEntries]);
 
   const handleChange = useCallback(
     (empId: string, field: MetricFields, value: string) => {
@@ -124,7 +161,6 @@ export function DailyLogView({
         ...prev,
         [empId]: { ...prev[empId], [field]: num },
       }));
-      setDirty((prev) => new Set(prev).add(empId));
     },
     []
   );
@@ -149,6 +185,12 @@ export function DailyLogView({
       ...entries[empId],
     }));
 
+    // Snapshot what we're saving as the new baseline
+    const savedSnapshot: Record<string, EntryValues> = {};
+    for (const empId of dirty) {
+      savedSnapshot[empId] = { ...entries[empId] };
+    }
+
     startSaveTransition(async () => {
       const result = await saveDailyMetrics({ date, entries: changedEntries });
 
@@ -158,7 +200,7 @@ export function DailyLogView({
       }
 
       toast.success(`Saved daily data for ${changedEntries.length} employee(s)`);
-      setDirty(new Set());
+      setOriginalEntries((prev) => ({ ...prev, ...savedSnapshot }));
     });
   };
 
@@ -167,36 +209,56 @@ export function DailyLogView({
 
   return (
     <div className="space-y-4">
-      {/* ── Date Navigation ── */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
+      {/* ── Date Navigation Toolbar ── */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 bg-card p-3">
+        <div className="flex items-center gap-1.5">
           <Button
             variant="outline"
-            size="icon"
-            className="h-9 w-9"
+            size="icon-sm"
             onClick={() => handleNavigate(shiftDate(date, -1))}
             disabled={isBusy}
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
 
-          <div className="relative">
-            <CalendarDays className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-            <Input
-              type="date"
-              value={date}
-              onChange={(e) => {
-                if (e.target.value) handleNavigate(e.target.value);
-              }}
-              disabled={isBusy}
-              className="pl-9 w-[170px] text-sm"
-            />
-          </div>
+          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+            <PopoverTrigger
+              render={
+                <Button
+                  variant="outline"
+                  className="gap-2 px-3"
+                  disabled={isBusy}
+                />
+              }
+            >
+              <CalendarDays className="h-4 w-4 text-primary/60" />
+              {isNavigating ? (
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Loading&hellip;
+                </span>
+              ) : (
+                <span className="font-medium">{formatShortDate(date)}</span>
+              )}
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0 shadow-lg" align="start">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={(day) => {
+                  if (day) {
+                    setCalendarOpen(false);
+                    handleNavigate(toLocalDateString(day));
+                  }
+                }}
+                defaultMonth={selectedDate}
+              />
+            </PopoverContent>
+          </Popover>
 
           <Button
             variant="outline"
-            size="icon"
-            className="h-9 w-9"
+            size="icon-sm"
             onClick={() => handleNavigate(shiftDate(date, 1))}
             disabled={isBusy}
           >
@@ -212,17 +274,6 @@ export function DailyLogView({
             >
               Today
             </Button>
-          )}
-
-          {isNavigating ? (
-            <span className="flex items-center gap-1.5 text-sm text-muted-foreground ml-1">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Loading...
-            </span>
-          ) : (
-            <span className="text-sm text-muted-foreground hidden sm:inline ml-1">
-              {formatDateDisplay(date)}
-            </span>
           )}
         </div>
 
@@ -246,60 +297,60 @@ export function DailyLogView({
               <thead>
                 <tr className="border-b border-border/60">
                   <th
-                    className="text-left p-3 font-medium sticky left-0 bg-card z-10"
+                    className="text-left p-3 text-xs font-semibold text-foreground/80 sticky left-0 bg-card z-10"
                     rowSpan={2}
                   >
                     Employee
                   </th>
                   <th
-                    className="text-center px-2 pt-2.5 pb-1 font-medium text-foreground/80 border-l border-border/40"
+                    className="text-center px-2 pt-3 pb-1.5 text-xs font-semibold text-foreground/80 border-l border-border/40"
                     colSpan={2}
                   >
                     Calls
                   </th>
                   <th
-                    className="text-center px-2 pt-2.5 pb-1 font-medium text-foreground/80 border-l border-border/40"
+                    className="text-center px-2 pt-3 pb-1.5 text-xs font-semibold text-foreground/80 border-l border-border/40"
                     colSpan={2}
                   >
                     Arch. Meetings
                   </th>
                   <th
-                    className="text-center px-2 pt-2.5 pb-1 font-medium text-foreground/80 border-l border-border/40"
+                    className="text-center px-2 pt-3 pb-1.5 text-xs font-semibold text-foreground/80 border-l border-border/40"
                     colSpan={2}
                   >
                     Client Meetings
                   </th>
                   <th
-                    className="text-center px-2 pt-2.5 pb-1 font-medium text-foreground/80 border-l border-border/40"
+                    className="text-center px-2 pt-3 pb-1.5 text-xs font-semibold text-foreground/80 border-l border-border/40"
                     colSpan={2}
                   >
                     Site Visits
                   </th>
                 </tr>
                 <tr className="border-b border-border/60">
-                  <th className="text-center px-1 py-1.5 text-xs text-muted-foreground font-normal border-l border-border/40 bg-muted/40">
-                    Tgt
+                  <th className="text-center px-1.5 py-2 text-[11px] uppercase tracking-wider font-medium text-muted-foreground border-l border-border/40 bg-muted/40">
+                    Target
                   </th>
-                  <th className="text-center px-1 py-1.5 text-xs text-muted-foreground font-normal">
-                    Act
+                  <th className="text-center px-1.5 py-2 text-[11px] uppercase tracking-wider font-medium text-muted-foreground">
+                    Actual
                   </th>
-                  <th className="text-center px-1 py-1.5 text-xs text-muted-foreground font-normal border-l border-border/40 bg-muted/40">
-                    Tgt
+                  <th className="text-center px-1.5 py-2 text-[11px] uppercase tracking-wider font-medium text-muted-foreground border-l border-border/40 bg-muted/40">
+                    Target
                   </th>
-                  <th className="text-center px-1 py-1.5 text-xs text-muted-foreground font-normal">
-                    Act
+                  <th className="text-center px-1.5 py-2 text-[11px] uppercase tracking-wider font-medium text-muted-foreground">
+                    Actual
                   </th>
-                  <th className="text-center px-1 py-1.5 text-xs text-muted-foreground font-normal border-l border-border/40 bg-muted/40">
-                    Tgt
+                  <th className="text-center px-1.5 py-2 text-[11px] uppercase tracking-wider font-medium text-muted-foreground border-l border-border/40 bg-muted/40">
+                    Target
                   </th>
-                  <th className="text-center px-1 py-1.5 text-xs text-muted-foreground font-normal">
-                    Act
+                  <th className="text-center px-1.5 py-2 text-[11px] uppercase tracking-wider font-medium text-muted-foreground">
+                    Actual
                   </th>
-                  <th className="text-center px-1 py-1.5 text-xs text-muted-foreground font-normal border-l border-border/40 bg-muted/40">
-                    Tgt
+                  <th className="text-center px-1.5 py-2 text-[11px] uppercase tracking-wider font-medium text-muted-foreground border-l border-border/40 bg-muted/40">
+                    Target
                   </th>
-                  <th className="text-center px-1 py-1.5 text-xs text-muted-foreground font-normal">
-                    Act
+                  <th className="text-center px-1.5 py-2 text-[11px] uppercase tracking-wider font-medium text-muted-foreground">
+                    Actual
                   </th>
                 </tr>
               </thead>
@@ -339,9 +390,20 @@ export function DailyLogView({
             <span>Unsaved changes</span>
           </div>
           <span>&middot;</span>
-          <span>
-            Tgt = Target (super admin only) &middot; Act = Actual
-          </span>
+          <span>Target columns (super admin only) &middot; Actual columns</span>
+          <span>&middot;</span>
+          <div className="flex items-center gap-1.5">
+            <div className="h-3 w-3 rounded-sm bg-emerald-50 border border-emerald-300" />
+            <span>&ge;100%</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="h-3 w-3 rounded-sm bg-amber-50 border border-amber-300" />
+            <span>&ge;70%</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="h-3 w-3 rounded-sm bg-red-50 border border-red-300" />
+            <span>&lt;70%</span>
+          </div>
         </div>
       )}
     </div>
@@ -396,7 +458,7 @@ function EmployeeRow({
           )}
         </div>
       </td>
-      {METRICS.map((m, i) => (
+      {METRICS.map((m) => (
         <MetricCells
           key={m.target}
           empId={employee.id}
@@ -437,6 +499,23 @@ function MetricCells({
   const inputBase =
     "h-8 w-16 block mx-auto text-sm px-1 [text-align:center] border-transparent bg-transparent rounded-md transition-colors hover:border-border/60 hover:bg-white focus-visible:bg-white focus-visible:border-primary/30 focus-visible:ring-2 focus-visible:ring-primary/15 disabled:hover:border-transparent disabled:hover:bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
 
+  // Achievement color for actual value cells
+  let actualCellBg = "";
+  let actualTextColor = "";
+  if (targetValue > 0 && actualValue > 0) {
+    const ratio = actualValue / targetValue;
+    if (ratio >= 1) {
+      actualCellBg = "bg-emerald-50/60 dark:bg-emerald-950/20";
+      actualTextColor = "font-medium text-emerald-700 dark:text-emerald-400";
+    } else if (ratio >= 0.7) {
+      actualCellBg = "bg-amber-50/60 dark:bg-amber-950/20";
+      actualTextColor = "font-medium text-amber-700 dark:text-amber-400";
+    } else {
+      actualCellBg = "bg-red-50/50 dark:bg-red-950/20";
+      actualTextColor = "font-medium text-red-600 dark:text-red-400";
+    }
+  }
+
   return (
     <>
       <td className="px-1 py-1.5 border-l border-border/40 bg-muted/20">
@@ -450,14 +529,14 @@ function MetricCells({
           placeholder="0"
         />
       </td>
-      <td className="px-1 py-1.5">
+      <td className={`px-1 py-1.5 transition-colors ${actualCellBg}`}>
         <Input
           type="number"
           min={0}
           value={actualValue || ""}
           onChange={(e) => onChange(empId, actualField, e.target.value)}
           disabled={!canEdit}
-          className={inputBase}
+          className={`${inputBase} ${actualTextColor}`}
           placeholder="0"
         />
       </td>

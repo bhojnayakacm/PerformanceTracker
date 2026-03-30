@@ -11,6 +11,7 @@ import {
 } from "@tanstack/react-table";
 import { Search, CalendarDays } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -62,7 +63,7 @@ export function PerformanceGrid({ data, userRole, month, year }: Props) {
   return (
     <div className="space-y-4">
       {/* Toolbar */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+      <div className="flex items-center justify-between gap-3 flex-wrap rounded-xl border border-border/60 bg-card p-3">
         <div className="relative flex-1 max-w-sm min-w-[200px]">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -76,11 +77,13 @@ export function PerformanceGrid({ data, userRole, month, year }: Props) {
       </div>
 
       {/* Table */}
-      <div className="rounded-lg border overflow-x-auto">
+      <Card className="shadow-sm overflow-hidden">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((hg) => (
-              <TableRow key={hg.id}>
+              <TableRow key={hg.id} className="bg-muted/40 hover:bg-muted/40">
                 {hg.headers.map((h) => (
                   <TableHead key={h.id}>
                     {h.isPlaceholder
@@ -99,7 +102,7 @@ export function PerformanceGrid({ data, userRole, month, year }: Props) {
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  className="cursor-pointer hover:bg-muted/50"
+                  className="cursor-pointer hover:bg-muted/30 transition-colors"
                   onClick={() => {
                     setSelectedRow(row.original);
                     setSheetOpen(true);
@@ -137,7 +140,9 @@ export function PerformanceGrid({ data, userRole, month, year }: Props) {
             )}
           </TableBody>
         </Table>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Detail Sheet */}
       <EmployeeDetailSheet

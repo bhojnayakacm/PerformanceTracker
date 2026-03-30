@@ -3,6 +3,13 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const MONTHS = [
   "January",
@@ -50,36 +57,45 @@ export function MonthSelector({ month, year, basePath }: Props) {
   const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1.5">
       <Button variant="outline" size="icon-sm" onClick={goPrev}>
         <ChevronLeft className="h-4 w-4" />
       </Button>
 
-      <div className="flex items-center gap-2 px-2">
-        <CalendarDays className="h-4 w-4 text-muted-foreground" />
-        <select
-          value={month}
-          onChange={(e) => navigate(parseInt(e.target.value), year)}
-          className="h-8 rounded-md border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-        >
-          {MONTHS.map((name, i) => (
-            <option key={i + 1} value={i + 1}>
-              {name}
-            </option>
-          ))}
-        </select>
+      <div className="flex items-center gap-2 px-1">
+        <CalendarDays className="h-4 w-4 text-primary/60" />
 
-        <select
-          value={year}
-          onChange={(e) => navigate(month, parseInt(e.target.value))}
-          className="h-8 rounded-md border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+        <Select
+          value={String(month)}
+          onValueChange={(val) => navigate(Number(val), year)}
         >
-          {years.map((y) => (
-            <option key={y} value={y}>
-              {y}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger className="w-[130px] bg-card">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent align="start" alignItemWithTrigger={false}>
+            {MONTHS.map((name, i) => (
+              <SelectItem key={i + 1} value={String(i + 1)}>
+                {name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={String(year)}
+          onValueChange={(val) => navigate(month, Number(val))}
+        >
+          <SelectTrigger className="w-[85px] bg-card">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent align="start" alignItemWithTrigger={false}>
+            {years.map((y) => (
+              <SelectItem key={y} value={String(y)}>
+                {y}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <Button variant="outline" size="icon-sm" onClick={goNext}>
