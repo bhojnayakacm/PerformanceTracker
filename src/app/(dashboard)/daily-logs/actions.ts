@@ -15,6 +15,7 @@ type DailyEntry = {
   actual_architect_meetings: number;
   actual_client_meetings: number;
   actual_site_visits: number;
+  remarks: string;
 };
 
 type SaveInput = {
@@ -55,6 +56,7 @@ export async function saveDailyMetrics(
 
     // Build upsert rows based on role
     const rows = entries.map((e) => {
+      const remarks = e.remarks.trim() || null;
       if (isSuperAdmin) {
         // Super admin can set both targets and actuals
         return {
@@ -66,6 +68,7 @@ export async function saveDailyMetrics(
           actual_architect_meetings: e.actual_architect_meetings,
           actual_client_meetings: e.actual_client_meetings,
           actual_site_visits: e.actual_site_visits,
+          remarks,
         };
       }
       // Editor can only set actuals
@@ -76,6 +79,7 @@ export async function saveDailyMetrics(
         actual_architect_meetings: e.actual_architect_meetings,
         actual_client_meetings: e.actual_client_meetings,
         actual_site_visits: e.actual_site_visits,
+        remarks,
       };
     });
 

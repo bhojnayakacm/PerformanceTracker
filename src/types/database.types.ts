@@ -25,6 +25,7 @@ export type Database = {
           actual_architect_meetings: number
           actual_client_meetings: number
           actual_site_visits: number
+          remarks: string | null
           created_at: string
           updated_at: string
         }
@@ -38,6 +39,7 @@ export type Database = {
           actual_architect_meetings?: number
           actual_client_meetings?: number
           actual_site_visits?: number
+          remarks?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -51,6 +53,7 @@ export type Database = {
           actual_architect_meetings?: number
           actual_client_meetings?: number
           actual_site_visits?: number
+          remarks?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -72,6 +75,7 @@ export type Database = {
           is_active: boolean
           location: string | null
           name: string
+          state: string | null
           updated_at: string
         }
         Insert: {
@@ -81,6 +85,7 @@ export type Database = {
           is_active?: boolean
           location?: string | null
           name: string
+          state?: string | null
           updated_at?: string
         }
         Update: {
@@ -90,6 +95,7 @@ export type Database = {
           is_active?: boolean
           location?: string | null
           name?: string
+          state?: string | null
           updated_at?: string
         }
         Relationships: []

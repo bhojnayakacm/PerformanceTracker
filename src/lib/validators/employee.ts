@@ -12,6 +12,7 @@ export const employeeCreateSchema = z.object({
     .min(2, "Name must be at least 2 characters")
     .max(100, "Name must be 100 characters or fewer"),
   location: z.string().trim().max(100).optional().or(z.literal("")),
+  state: z.string().trim().max(100).optional().or(z.literal("")),
 });
 
 export const employeeUpdateSchema = employeeCreateSchema.extend({

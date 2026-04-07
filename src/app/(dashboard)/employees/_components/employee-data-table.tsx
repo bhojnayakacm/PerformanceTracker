@@ -74,7 +74,8 @@ export function EmployeeDataTable({ data, userRole }: Props) {
       const name = (row.original.name ?? "").toLowerCase();
       const empId = (row.original.emp_id ?? "").toLowerCase();
       const location = (row.original.location ?? "").toLowerCase();
-      return name.includes(search) || empId.includes(search) || location.includes(search);
+      const state = (row.original.state ?? "").toLowerCase();
+      return name.includes(search) || empId.includes(search) || location.includes(search) || state.includes(search);
     },
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),

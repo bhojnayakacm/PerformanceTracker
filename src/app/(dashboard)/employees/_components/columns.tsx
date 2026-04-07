@@ -82,6 +82,20 @@ export function getColumns(
       cell: ({ row }) => row.getValue("location") || "—",
     },
     {
+      accessorKey: "state",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="-ml-3"
+        >
+          State
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => row.getValue("state") || "—",
+    },
+    {
       accessorKey: "is_active",
       header: "Status",
       cell: ({ row }) => {

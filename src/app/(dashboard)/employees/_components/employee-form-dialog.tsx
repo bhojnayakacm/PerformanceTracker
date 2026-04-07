@@ -38,6 +38,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
       emp_id: "",
       name: "",
       location: "",
+      state: "",
     },
   });
 
@@ -47,6 +48,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
         emp_id: employee?.emp_id ?? "",
         name: employee?.name ?? "",
         location: employee?.location ?? "",
+        state: employee?.state ?? "",
       });
     }
   }, [open, employee, form]);
@@ -122,18 +124,34 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="location">Location</Label>
-            <Input
-              id="location"
-              placeholder="e.g. Mumbai (optional)"
-              {...form.register("location")}
-            />
-            {form.formState.errors.location && (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.location.message}
-              </p>
-            )}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="location">Location</Label>
+              <Input
+                id="location"
+                placeholder="e.g. Mumbai"
+                {...form.register("location")}
+              />
+              {form.formState.errors.location && (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.location.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="state">State</Label>
+              <Input
+                id="state"
+                placeholder="e.g. Maharashtra"
+                {...form.register("state")}
+              />
+              {form.formState.errors.state && (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.state.message}
+                </p>
+              )}
+            </div>
           </div>
 
           <DialogFooter>

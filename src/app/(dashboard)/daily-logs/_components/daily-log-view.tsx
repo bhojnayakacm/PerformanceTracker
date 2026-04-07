@@ -37,7 +37,7 @@ type MetricFields =
   | "actual_client_meetings"
   | "actual_site_visits";
 
-type EntryValues = Record<MetricFields, number>;
+type EntryValues = Record<MetricFields, number> & { remarks: string };
 
 const EMPTY_ENTRY: EntryValues = {
   target_calls: 0,
@@ -46,6 +46,7 @@ const EMPTY_ENTRY: EntryValues = {
   actual_architect_meetings: 0,
   actual_client_meetings: 0,
   actual_site_visits: 0,
+  remarks: "",
 };
 
 type Props = {
@@ -66,6 +67,7 @@ function toEntryValues(dm: DailyMetric | undefined): EntryValues {
     actual_architect_meetings: dm.actual_architect_meetings,
     actual_client_meetings: dm.actual_client_meetings,
     actual_site_visits: dm.actual_site_visits,
+    remarks: dm.remarks ?? "",
   };
 }
 
@@ -185,7 +187,7 @@ export function DailyLogView({
   // Smart dirty — only true when draft actually differs from server baseline
   const dirty = useMemo(() => {
     const dirtySet = new Set<string>();
-    const fields = Object.keys(EMPTY_ENTRY) as MetricFields[];
+    const fields = Object.keys(EMPTY_ENTRY) as (keyof EntryValues)[];
     for (const empId of Object.keys(entries)) {
       const orig = originalEntries[empId];
       const curr = entries[empId];
@@ -206,6 +208,16 @@ export function DailyLogView({
       setEntries((prev) => ({
         ...prev,
         [empId]: { ...prev[empId], [field]: num },
+      }));
+    },
+    []
+  );
+
+  const handleRemarkChange = useCallback(
+    (empId: string, value: string) => {
+      setEntries((prev) => ({
+        ...prev,
+        [empId]: { ...prev[empId], remarks: value },
       }));
     },
     []
@@ -380,45 +392,51 @@ export function DailyLogView({
             <table className="w-full border-collapse text-sm">
               <thead className="sticky top-0 z-20 bg-slate-100 dark:bg-slate-800">
                 {/* Group headers */}
-                <tr className="border-b border-border/60">
+                <tr>
                   <th
-                    className="text-left p-3 text-sm font-semibold text-slate-700 dark:text-slate-300 tracking-wide sticky left-0 bg-slate-100 dark:bg-slate-800 z-30"
+                    className="text-left p-3 text-sm font-semibold text-slate-700 dark:text-slate-300 tracking-wide sticky left-0 bg-slate-100 dark:bg-slate-800 z-30 border-r-2 border-r-slate-300 dark:border-r-slate-600 border-b-2 border-b-slate-300 dark:border-b-slate-600"
                     rowSpan={2}
                   >
                     Employee
                   </th>
                   <th
-                    className="text-center px-2 pt-3 pb-1.5 text-sm font-semibold text-slate-700 dark:text-slate-300 tracking-wide border-l border-border/40 bg-slate-100 dark:bg-slate-800"
+                    className="text-center px-2 pt-3 pb-1.5 text-sm font-semibold text-slate-700 dark:text-slate-300 tracking-wide border-r-2 border-r-slate-300 dark:border-r-slate-600 border-b border-b-slate-200 dark:border-b-slate-700 bg-slate-100 dark:bg-slate-800"
+                    colSpan={4}
+                  >
+                    Meetings
+                  </th>
+                  <th
+                    className="text-center px-2 pt-3 pb-1.5 text-sm font-semibold text-slate-700 dark:text-slate-300 tracking-wide border-r-2 border-r-slate-300 dark:border-r-slate-600 border-b border-b-slate-200 dark:border-b-slate-700 bg-slate-100 dark:bg-slate-800"
                     colSpan={2}
                   >
                     Calls
                   </th>
                   <th
-                    className="text-center px-2 pt-3 pb-1.5 text-sm font-semibold text-slate-700 dark:text-slate-300 tracking-wide border-l border-border/40 bg-slate-100 dark:bg-slate-800"
-                    colSpan={4}
+                    className="text-center px-2 pt-3 pb-1.5 text-sm font-semibold text-slate-700 dark:text-slate-300 tracking-wide bg-slate-100 dark:bg-slate-800 border-b-2 border-b-slate-300 dark:border-b-slate-600"
+                    rowSpan={2}
                   >
-                    Meetings
+                    Remarks
                   </th>
                 </tr>
                 {/* Sub-headers */}
-                <tr className="border-b border-border/60">
-                  <th className="text-center px-1.5 py-2 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 border-l border-border/40 bg-slate-200/70 dark:bg-slate-700/50">
+                <tr>
+                  <th className="text-center px-1.5 py-2 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 bg-slate-200/70 dark:bg-slate-700/50 border-r border-r-slate-200 dark:border-r-slate-700 border-b-2 border-b-slate-300 dark:border-b-slate-600">
                     Target
                   </th>
-                  <th className="text-center px-1.5 py-2 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800">
-                    Actual
-                  </th>
-                  <th className="text-center px-1.5 py-2 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 border-l border-border/40 bg-slate-200/70 dark:bg-slate-700/50">
-                    Target
-                  </th>
-                  <th className="text-center px-1.5 py-2 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800">
+                  <th className="text-center px-1.5 py-2 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border-r border-r-slate-200 dark:border-r-slate-700 border-b-2 border-b-slate-300 dark:border-b-slate-600">
                     Architect
                   </th>
-                  <th className="text-center px-1.5 py-2 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800">
+                  <th className="text-center px-1.5 py-2 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border-r border-r-slate-200 dark:border-r-slate-700 border-b-2 border-b-slate-300 dark:border-b-slate-600">
                     Client
                   </th>
-                  <th className="text-center px-1.5 py-2 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800">
+                  <th className="text-center px-1.5 py-2 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border-r-2 border-r-slate-300 dark:border-r-slate-600 border-b-2 border-b-slate-300 dark:border-b-slate-600">
                     Site Visits
+                  </th>
+                  <th className="text-center px-1.5 py-2 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 bg-slate-200/70 dark:bg-slate-700/50 border-r border-r-slate-200 dark:border-r-slate-700 border-b-2 border-b-slate-300 dark:border-b-slate-600">
+                    Target
+                  </th>
+                  <th className="text-center px-1.5 py-2 text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border-r-2 border-r-slate-300 dark:border-r-slate-600 border-b-2 border-b-slate-300 dark:border-b-slate-600">
+                    Actual
                   </th>
                 </tr>
               </thead>
@@ -432,11 +450,12 @@ export function DailyLogView({
                     canEditTargets={canEditTargets}
                     canEdit={canEdit}
                     onChange={handleChange}
+                    onRemarkChange={handleRemarkChange}
                   />
                 ))}
                 {filteredEmployees.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="py-16">
+                    <td colSpan={8} className="py-16">
                       <div className="flex flex-col items-center gap-3">
                         <div className="flex size-12 items-center justify-center rounded-full bg-muted/60">
                           <CalendarDays className="h-6 w-6 text-muted-foreground/80" />
@@ -514,6 +533,7 @@ function EmployeeRow({
   canEditTargets,
   canEdit,
   onChange,
+  onRemarkChange,
 }: {
   employee: Employee;
   values: EntryValues;
@@ -521,6 +541,7 @@ function EmployeeRow({
   canEditTargets: boolean;
   canEdit: boolean;
   onChange: (empId: string, field: MetricFields, value: string) => void;
+  onRemarkChange: (empId: string, value: string) => void;
 }) {
   // Calls achievement
   const callsColors = getAchievementColors(
@@ -547,7 +568,7 @@ function EmployeeRow({
       }`}
     >
       {/* Employee */}
-      <td className="p-3 sticky left-0 bg-inherit z-10">
+      <td className="p-3 sticky left-0 bg-inherit z-10 border-r-2 border-r-slate-300 dark:border-r-slate-600">
         <div className="flex items-center gap-2.5">
           <div
             className={`flex size-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ${getAvatarColor(employee.name)}`}
@@ -573,40 +594,8 @@ function EmployeeRow({
         </div>
       </td>
 
-      {/* Calls Target */}
-      <td className="px-1 py-1.5 border-l border-border/40 bg-muted/20">
-        <Input
-          id={`target-calls-${employee.id}`}
-          type="number"
-          min={0}
-          value={values.target_calls || ""}
-          onChange={(e) =>
-            onChange(employee.id, "target_calls", e.target.value)
-          }
-          disabled={!canEditTargets}
-          className={INPUT_BASE}
-          placeholder="0"
-        />
-      </td>
-
-      {/* Calls Actual */}
-      <td className={`px-1 py-1.5 transition-colors ${callsColors.bg}`}>
-        <Input
-          id={`actual-calls-${employee.id}`}
-          type="number"
-          min={0}
-          value={values.actual_calls || ""}
-          onChange={(e) =>
-            onChange(employee.id, "actual_calls", e.target.value)
-          }
-          disabled={!canEdit}
-          className={`${INPUT_BASE} ${callsColors.text}`}
-          placeholder="0"
-        />
-      </td>
-
       {/* Meetings Target (single combined target) */}
-      <td className="px-1 py-1.5 border-l border-border/40 bg-muted/20">
+      <td className="px-1 py-1.5 bg-muted/20 border-r border-r-slate-200 dark:border-r-slate-700">
         <Input
           id={`target-meetings-${employee.id}`}
           type="number"
@@ -622,7 +611,7 @@ function EmployeeRow({
       </td>
 
       {/* Architect Meetings Actual */}
-      <td className={`px-1 py-1.5 transition-colors ${meetingsColors.bg}`}>
+      <td className={`px-1 py-1.5 transition-colors border-r border-r-slate-200 dark:border-r-slate-700 ${meetingsColors.bg}`}>
         <Input
           id={`actual-architect-${employee.id}`}
           type="number"
@@ -642,7 +631,7 @@ function EmployeeRow({
       </td>
 
       {/* Client Meetings Actual */}
-      <td className={`px-1 py-1.5 transition-colors ${meetingsColors.bg}`}>
+      <td className={`px-1 py-1.5 transition-colors border-r border-r-slate-200 dark:border-r-slate-700 ${meetingsColors.bg}`}>
         <Input
           id={`actual-client-${employee.id}`}
           type="number"
@@ -658,7 +647,7 @@ function EmployeeRow({
       </td>
 
       {/* Site Visits Actual */}
-      <td className={`px-1 py-1.5 transition-colors ${meetingsColors.bg}`}>
+      <td className={`px-1 py-1.5 transition-colors border-r-2 border-r-slate-300 dark:border-r-slate-600 ${meetingsColors.bg}`}>
         <Input
           id={`actual-site-visits-${employee.id}`}
           type="number"
@@ -670,6 +659,51 @@ function EmployeeRow({
           disabled={!canEdit}
           className={`${INPUT_BASE} ${meetingsColors.text}`}
           placeholder="0"
+        />
+      </td>
+
+      {/* Calls Target */}
+      <td className="px-1 py-1.5 bg-muted/20 border-r border-r-slate-200 dark:border-r-slate-700">
+        <Input
+          id={`target-calls-${employee.id}`}
+          type="number"
+          min={0}
+          value={values.target_calls || ""}
+          onChange={(e) =>
+            onChange(employee.id, "target_calls", e.target.value)
+          }
+          disabled={!canEditTargets}
+          className={INPUT_BASE}
+          placeholder="0"
+        />
+      </td>
+
+      {/* Calls Actual */}
+      <td className={`px-1 py-1.5 transition-colors border-r-2 border-r-slate-300 dark:border-r-slate-600 ${callsColors.bg}`}>
+        <Input
+          id={`actual-calls-${employee.id}`}
+          type="number"
+          min={0}
+          value={values.actual_calls || ""}
+          onChange={(e) =>
+            onChange(employee.id, "actual_calls", e.target.value)
+          }
+          disabled={!canEdit}
+          className={`${INPUT_BASE} ${callsColors.text}`}
+          placeholder="0"
+        />
+      </td>
+
+      {/* Remarks */}
+      <td className="px-1 py-1.5">
+        <Input
+          id={`remarks-${employee.id}`}
+          type="text"
+          value={values.remarks}
+          onChange={(e) => onRemarkChange(employee.id, e.target.value)}
+          disabled={!canEdit}
+          className={`${INPUT_BASE} w-32 text-left px-2 [text-align:left]`}
+          placeholder="Add note..."
         />
       </td>
     </tr>
