@@ -22,39 +22,27 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { Profile } from "@/lib/types";
-import { updateUserRole, toggleUserStatus } from "../actions";
+import type { Employee, Profile } from "@/lib/types";
+import { toggleUserStatus } from "../actions";
 import { getColumns } from "./columns";
+import { ManagerAssignmentDialog } from "./manager-assignment-dialog";
 
 type Props = {
   data: Profile[];
   currentUserId: string;
+  employees: Employee[];
 };
 
-export function UsersDataTable({ data, currentUserId }: Props) {
+export function UsersDataTable({ data, currentUserId, employees }: Props) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
   const [, startTransition] = useTransition();
+  const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
+  const [assignmentTarget, setAssignmentTarget] = useState<Profile | null>(null);
 
   const columns = useMemo(
     () =>
       getColumns(currentUserId, {
-        onRoleChange: (userId, newRole) => {
-          startTransition(async () => {
-            const result = await updateUserRole(userId, newRole);
-            if ("error" in result) {
-              toast.error(result.error);
-            } else {
-              const roleLabel =
-                newRole === "super_admin"
-                  ? "Super Admin"
-                  : newRole === "editor"
-                    ? "Editor"
-                    : "Viewer";
-              toast.success(`Role updated to ${roleLabel}`);
-            }
-          });
-        },
         onToggleStatus: (userId, currentStatus) => {
           startTransition(async () => {
             const result = await toggleUserStatus(userId, currentStatus);
@@ -66,6 +54,10 @@ export function UsersDataTable({ data, currentUserId }: Props) {
               );
             }
           });
+        },
+        onManageAssignments: (profile) => {
+          setAssignmentTarget(profile);
+          setAssignmentDialogOpen(true);
         },
       }),
     [currentUserId, startTransition]
@@ -175,6 +167,17 @@ export function UsersDataTable({ data, currentUserId }: Props) {
         </Table>
         </CardContent>
       </Card>
+
+      {/* Manager Assignment Dialog */}
+      <ManagerAssignmentDialog
+        open={assignmentDialogOpen}
+        onOpenChange={(open) => {
+          setAssignmentDialogOpen(open);
+          if (!open) setAssignmentTarget(null);
+        }}
+        manager={assignmentTarget}
+        employees={employees}
+      />
     </div>
   );
 }

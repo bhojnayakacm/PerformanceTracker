@@ -16,4 +16,4 @@ export type EmployeeMonthlyData = {
 
 export type Profile = Tables<"profiles">;
 
-export type UserRole = "super_admin" | "editor" | "viewer";
+export type UserRole = "super_admin" | "manager" | "editor" | "viewer";

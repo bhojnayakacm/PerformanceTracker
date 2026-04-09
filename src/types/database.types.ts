@@ -67,6 +67,42 @@ export type Database = {
           },
         ]
       }
+      manager_assignments: {
+        Row: {
+          id: string
+          manager_id: string
+          employee_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          manager_id: string
+          employee_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          manager_id?: string
+          employee_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manager_assignments_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manager_assignments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
           created_at: string

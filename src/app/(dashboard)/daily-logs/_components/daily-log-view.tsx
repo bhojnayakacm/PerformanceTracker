@@ -130,7 +130,7 @@ export function DailyLogView({
   const router = useRouter();
   const [isSaving, startSaveTransition] = useTransition();
   const [isNavigating, startNavigation] = useTransition();
-  const canEditTargets = userRole === "super_admin";
+  const canEditTargets = userRole === "super_admin" || userRole === "manager";
   const canEdit = userRole !== "viewer";
 
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -491,7 +491,7 @@ export function DailyLogView({
           </div>
           <span>&middot;</span>
           <span>
-            Target columns (super admin only) &middot; Actual columns
+            Target columns (super admin &amp; manager) &middot; Actual columns
           </span>
           <span>&middot;</span>
           <div className="flex items-center gap-1.5">

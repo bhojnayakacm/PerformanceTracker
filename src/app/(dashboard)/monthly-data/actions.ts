@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { assertManagerEmployeeAccess } from "@/lib/queries/employees";
 import {
   monthlyDataSchema,
   type MonthlyDataInput,
@@ -29,7 +30,7 @@ async function getAuthenticatedRole() {
     .eq("id", user.id)
     .single();
 
-  return { supabase, role: (profile?.role ?? "viewer") as string };
+  return { supabase, userId: user.id, role: (profile?.role ?? "viewer") as string };
 }
 
 export async function saveMonthlyData(
@@ -43,17 +44,31 @@ export async function saveMonthlyData(
   }
 
   try {
-    const { supabase, role } = await getAuthenticatedRole();
+    const { supabase, userId, role } = await getAuthenticatedRole();
 
     if (role === "viewer") {
       return { error: "You don't have permission to edit data" };
     }
 
+    const canEditTargets = role === "super_admin" || role === "manager";
+
+    // If manager, verify access to this employee
+    if (role === "manager") {
+      const hasAccess = await assertManagerEmployeeAccess(
+        supabase,
+        userId,
+        [employeeId]
+      );
+      if (!hasAccess) {
+        return { error: "You don't have access to this employee" };
+      }
+    }
+
     const data = parsed.data;
 
-    // Upsert targets (super_admin only)
+    // Upsert targets (super_admin and manager)
     // Note: target_total_meetings & target_total_calls are now auto-synced from daily_metrics
-    if (role === "super_admin") {
+    if (canEditTargets) {
       const { error: targetError } = await supabase
         .from("monthly_targets")
         .upsert(
@@ -72,7 +87,7 @@ export async function saveMonthlyData(
       if (targetError) return { error: targetError.message };
     }
 
-    // Upsert actuals (super_admin and editor)
+    // Upsert actuals (super_admin, manager, and editor)
     // Note: actual_calls, actual_architect_meetings, actual_client_meetings,
     //       actual_site_visits are now auto-synced from daily_metrics
     const cities = data.actual_travelling_cities

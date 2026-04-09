@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/lib/types";
+import { getEmployeesForUser } from "@/lib/queries/employees";
 import { EmployeeDataTable } from "./_components/employee-data-table";
 
 export default async function EmployeesPage() {
@@ -12,12 +13,14 @@ export default async function EmployeesPage() {
 
   if (!user) redirect("/login");
 
-  const [{ data: profile }, { data: employees }] = await Promise.all([
-    supabase.from("profiles").select("role").eq("id", user.id).single(),
-    supabase.from("employees").select("*").order("name", { ascending: true }),
-  ]);
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
 
   const userRole = (profile?.role ?? "viewer") as UserRole;
+  const employees = await getEmployeesForUser(supabase, user.id, userRole);
 
   return (
     <div className="space-y-6">
@@ -27,7 +30,7 @@ export default async function EmployeesPage() {
           Manage employee records and details.
         </p>
       </div>
-      <EmployeeDataTable data={employees ?? []} userRole={userRole} />
+      <EmployeeDataTable data={employees} userRole={userRole} />
     </div>
   );
 }

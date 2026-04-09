@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { assertManagerEmployeeAccess } from "@/lib/queries/employees";
 
 type ActionResult = { success: true } | { error: string };
 
@@ -52,13 +53,26 @@ export async function saveDailyMetrics(
       return { error: "You don't have permission to edit data" };
     }
 
-    const isSuperAdmin = role === "super_admin";
+    const canEditTargets = role === "super_admin" || role === "manager";
+
+    // If manager, verify access to all employee IDs
+    if (role === "manager") {
+      const empIds = entries.map((e) => e.employee_id);
+      const hasAccess = await assertManagerEmployeeAccess(
+        supabase,
+        user.id,
+        empIds
+      );
+      if (!hasAccess) {
+        return { error: "You don't have access to one or more employees" };
+      }
+    }
 
     // Build upsert rows based on role
     const rows = entries.map((e) => {
       const remarks = e.remarks.trim() || null;
-      if (isSuperAdmin) {
-        // Super admin can set both targets and actuals
+      if (canEditTargets) {
+        // Super admin and manager can set both targets and actuals
         return {
           employee_id: e.employee_id,
           date,
@@ -134,8 +148,10 @@ export async function bulkSetMonthlyTargets(
       .eq("id", user.id)
       .single();
 
-    if (profile?.role !== "super_admin") {
-      return { error: "Only super admins can set bulk targets" };
+    const role = profile?.role ?? "viewer";
+
+    if (role !== "super_admin" && role !== "manager") {
+      return { error: "Only super admins and managers can set bulk targets" };
     }
 
     // Resolve employee IDs
@@ -143,16 +159,37 @@ export async function bulkSetMonthlyTargets(
     if (employee_ids && employee_ids.length > 0) {
       employeeIds = employee_ids;
     } else {
-      const { data: employees, error: empError } = await supabase
-        .from("employees")
-        .select("id")
-        .eq("is_active", true);
-      if (empError) return { error: empError.message };
-      employeeIds = (employees ?? []).map((e) => e.id);
+      // "All employees" — for manager, scoped to their assignments
+      if (role === "manager") {
+        const { data: assignments } = await supabase
+          .from("manager_assignments")
+          .select("employee_id")
+          .eq("manager_id", user.id);
+        employeeIds = (assignments ?? []).map((a) => a.employee_id);
+      } else {
+        const { data: employees, error: empError } = await supabase
+          .from("employees")
+          .select("id")
+          .eq("is_active", true);
+        if (empError) return { error: empError.message };
+        employeeIds = (employees ?? []).map((e) => e.id);
+      }
     }
 
     if (employeeIds.length === 0) {
       return { error: "No employees found" };
+    }
+
+    // If manager with explicit IDs, verify access
+    if (role === "manager" && employee_ids && employee_ids.length > 0) {
+      const hasAccess = await assertManagerEmployeeAccess(
+        supabase,
+        user.id,
+        employeeIds
+      );
+      if (!hasAccess) {
+        return { error: "You don't have access to one or more employees" };
+      }
     }
 
     // Generate working dates for the month

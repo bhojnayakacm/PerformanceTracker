@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { UserRole, EmployeeMonthlyData } from "@/lib/types";
+import { getEmployeesForUser } from "@/lib/queries/employees";
 import { PerformanceGrid } from "./_components/performance-grid";
 
 export default async function MonthlyDataPage({
@@ -21,27 +22,27 @@ export default async function MonthlyDataPage({
   const month = params.month ? parseInt(params.month) : now.getMonth() + 1;
   const year = params.year ? parseInt(params.year) : now.getFullYear();
 
-  const [{ data: profile }, { data: employees }, { data: targets }, { data: actuals }] =
-    await Promise.all([
-      supabase.from("profiles").select("role").eq("id", user.id).single(),
-      supabase
-        .from("employees")
-        .select("*")
-        .eq("is_active", true)
-        .order("name", { ascending: true }),
-      supabase
-        .from("monthly_targets")
-        .select("*")
-        .eq("month", month)
-        .eq("year", year),
-      supabase
-        .from("monthly_actuals")
-        .select("*")
-        .eq("month", month)
-        .eq("year", year),
-    ]);
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
 
   const userRole = (profile?.role ?? "viewer") as UserRole;
+
+  const [employees, { data: targets }, { data: actuals }] = await Promise.all([
+    getEmployeesForUser(supabase, user.id, userRole, { activeOnly: true }),
+    supabase
+      .from("monthly_targets")
+      .select("*")
+      .eq("month", month)
+      .eq("year", year),
+    supabase
+      .from("monthly_actuals")
+      .select("*")
+      .eq("month", month)
+      .eq("year", year),
+  ]);
 
   // Determine if viewing the current month for MTD pacing
   const isCurrentMonth =
@@ -71,7 +72,7 @@ export default async function MonthlyDataPage({
   }
 
   // Merge employees with their target/actual data
-  const data: EmployeeMonthlyData[] = (employees ?? []).map((emp) => {
+  const data: EmployeeMonthlyData[] = employees.map((emp) => {
     const target = targets?.find((t) => t.employee_id === emp.id) ?? null;
     const actual = actuals?.find((a) => a.employee_id === emp.id) ?? null;
 

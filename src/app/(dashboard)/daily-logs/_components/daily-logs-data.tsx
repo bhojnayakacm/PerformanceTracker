@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { UserRole, DailyMetric } from "@/lib/types";
+import { getEmployeesForUser } from "@/lib/queries/employees";
 import { DailyLogView } from "./daily-log-view";
 
 export async function DailyLogsData({ date }: { date: string }) {
@@ -12,18 +13,18 @@ export async function DailyLogsData({ date }: { date: string }) {
 
   if (!user) redirect("/login");
 
-  const [{ data: profile }, { data: employees }, { data: dailyMetrics }] =
-    await Promise.all([
-      supabase.from("profiles").select("role").eq("id", user.id).single(),
-      supabase
-        .from("employees")
-        .select("*")
-        .eq("is_active", true)
-        .order("name", { ascending: true }),
-      supabase.from("daily_metrics").select("*").eq("date", date),
-    ]);
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
 
   const userRole = (profile?.role ?? "viewer") as UserRole;
+
+  const [employees, { data: dailyMetrics }] = await Promise.all([
+    getEmployeesForUser(supabase, user.id, userRole, { activeOnly: true }),
+    supabase.from("daily_metrics").select("*").eq("date", date),
+  ]);
 
   const dataMap: Record<string, DailyMetric> = {};
   for (const row of dailyMetrics ?? []) {
@@ -33,7 +34,7 @@ export async function DailyLogsData({ date }: { date: string }) {
   return (
     <DailyLogView
       key={date}
-      employees={employees ?? []}
+      employees={employees}
       initialData={dataMap}
       date={date}
       userRole={userRole}

@@ -11,13 +11,19 @@ export default async function UsersPage() {
 
   if (!user) redirect("/login");
 
-  const [{ data: profile }, { data: profiles }] = await Promise.all([
-    supabase.from("profiles").select("role").eq("id", user.id).single(),
-    supabase
-      .from("profiles")
-      .select("*")
-      .order("created_at", { ascending: true }),
-  ]);
+  const [{ data: profile }, { data: profiles }, { data: employees }] =
+    await Promise.all([
+      supabase.from("profiles").select("role").eq("id", user.id).single(),
+      supabase
+        .from("profiles")
+        .select("*")
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("employees")
+        .select("*")
+        .eq("is_active", true)
+        .order("name", { ascending: true }),
+    ]);
 
   if (profile?.role !== "super_admin") {
     return (
@@ -45,7 +51,11 @@ export default async function UsersPage() {
           Manage application users and their roles.
         </p>
       </div>
-      <UsersDataTable data={profiles ?? []} currentUserId={user.id} />
+      <UsersDataTable
+        data={profiles ?? []}
+        currentUserId={user.id}
+        employees={employees ?? []}
+      />
     </div>
   );
 }

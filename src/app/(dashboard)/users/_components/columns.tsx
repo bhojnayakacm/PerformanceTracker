@@ -1,16 +1,10 @@
 "use client";
 
 import { type ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, Check, ChevronDown } from "lucide-react";
+import { ArrowUpDown, UserPlus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import type { Profile, UserRole } from "@/lib/types";
+import type { Profile } from "@/lib/types";
 import { getInitials, getAvatarColor } from "@/lib/utils";
 
 const ROLE_CONFIG: Record<
@@ -21,6 +15,11 @@ const ROLE_CONFIG: Record<
     label: "Super Admin",
     className:
       "bg-violet-100 text-violet-700 border-violet-200/60 dark:bg-violet-900/30 dark:text-violet-400 dark:border-violet-800",
+  },
+  manager: {
+    label: "Manager",
+    className:
+      "bg-amber-100 text-amber-700 border-amber-200/60 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800",
   },
   editor: {
     label: "Editor",
@@ -34,15 +33,9 @@ const ROLE_CONFIG: Record<
   },
 };
 
-const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
-  { value: "super_admin", label: "Super Admin" },
-  { value: "editor", label: "Editor" },
-  { value: "viewer", label: "Viewer" },
-];
-
 type ColumnActions = {
-  onRoleChange: (userId: string, newRole: UserRole) => void;
   onToggleStatus: (userId: string, currentStatus: boolean) => void;
+  onManageAssignments: (profile: Profile) => void;
 };
 
 export function getColumns(
@@ -89,54 +82,25 @@ export function getColumns(
       header: "Role",
       cell: ({ row }) => {
         const role = row.original.role;
-        const isSelf = row.original.id === currentUserId;
         const config = ROLE_CONFIG[role] ?? ROLE_CONFIG.viewer;
 
-        if (isSelf) {
-          return (
+        return (
+          <div className="flex items-center gap-2">
             <Badge variant="secondary" className={config.className}>
               {config.label}
             </Badge>
-          );
-        }
-
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-auto rounded-full p-0 hover:bg-transparent focus-visible:ring-offset-0"
-                />
-              }
-            >
-              <Badge
-                variant="secondary"
-                className={`cursor-pointer pr-1.5 transition-shadow hover:ring-2 hover:ring-ring/20 ${config.className}`}
+            {role === "manager" && row.original.id !== currentUserId && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 gap-1.5 px-2.5 text-xs font-medium"
+                onClick={() => actions.onManageAssignments(row.original)}
               >
-                {config.label}
-                <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
-              </Badge>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              {ROLE_OPTIONS.map((opt) => (
-                <DropdownMenuItem
-                  key={opt.value}
-                  onClick={() =>
-                    actions.onRoleChange(row.original.id, opt.value)
-                  }
-                >
-                  {role === opt.value ? (
-                    <Check className="mr-2 h-4 w-4" />
-                  ) : (
-                    <span className="mr-2 w-4" />
-                  )}
-                  {opt.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <UserPlus className="h-3.5 w-3.5" />
+                Assign
+              </Button>
+            )}
+          </div>
         );
       },
       filterFn: (row, _columnId, value) => {

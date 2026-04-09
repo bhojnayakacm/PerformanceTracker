@@ -85,7 +85,7 @@ export function EmployeeDetailSheet({
   userRole,
 }: Props) {
   const [isPending, startTransition] = useTransition();
-  const canEditTargets = userRole === "super_admin";
+  const canEditTargets = userRole === "super_admin" || userRole === "manager";
   const canEdit = userRole !== "viewer";
 
   const form = useForm<MonthlyDataInput>({
