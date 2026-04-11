@@ -10,7 +10,10 @@ export async function getEmployeesForUser(
   supabase: SupabaseClient<Database>,
   userId: string,
   role: string,
-  { activeOnly = false }: { activeOnly?: boolean } = {}
+  {
+    activeOnly = false,
+    search = "",
+  }: { activeOnly?: boolean; search?: string } = {}
 ): Promise<Employee[]> {
   if (role === "manager") {
     const { data: assignments } = await supabase
@@ -28,6 +31,9 @@ export async function getEmployeesForUser(
       .order("name", { ascending: true });
 
     if (activeOnly) query = query.eq("is_active", true);
+    if (search) {
+      query = query.or(`name.ilike.%${search}%,emp_id.ilike.%${search}%`);
+    }
 
     const { data } = await query;
     return data ?? [];
@@ -39,6 +45,9 @@ export async function getEmployeesForUser(
     .order("name", { ascending: true });
 
   if (activeOnly) query = query.eq("is_active", true);
+  if (search) {
+    query = query.or(`name.ilike.%${search}%,emp_id.ilike.%${search}%`);
+  }
 
   const { data } = await query;
   return data ?? [];

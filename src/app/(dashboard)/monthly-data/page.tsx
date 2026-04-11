@@ -1,122 +1,21 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import type {
-  UserRole,
-  EmployeeMonthlyData,
-  CityTourWithCity,
-} from "@/lib/types";
-import { getEmployeesForUser } from "@/lib/queries/employees";
-import { PerformanceGrid } from "./_components/performance-grid";
+import { Suspense } from "react";
+import { MonthlyDataContent } from "./_components/monthly-data-content";
+import { MonthlyDataTableSkeleton } from "./_components/monthly-data-skeleton";
 
 export default async function MonthlyDataPage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string; year?: string }>;
+  searchParams: Promise<{
+    month?: string;
+    year?: string;
+    query?: string;
+  }>;
 }) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
-
   const params = await searchParams;
   const now = new Date();
   const month = params.month ? parseInt(params.month) : now.getMonth() + 1;
   const year = params.year ? parseInt(params.year) : now.getFullYear();
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  const userRole = (profile?.role ?? "viewer") as UserRole;
-
-  const [
-    employees,
-    { data: targets },
-    { data: actuals },
-    { data: cityTours },
-    { data: cities },
-  ] = await Promise.all([
-    getEmployeesForUser(supabase, user.id, userRole, { activeOnly: true }),
-    supabase
-      .from("monthly_targets")
-      .select("*")
-      .eq("month", month)
-      .eq("year", year),
-    supabase
-      .from("monthly_actuals")
-      .select("*")
-      .eq("month", month)
-      .eq("year", year),
-    supabase
-      .from("monthly_city_tours")
-      .select("*, city:cities(id, name)")
-      .eq("month", month)
-      .eq("year", year),
-    supabase.from("cities").select("*").order("name", { ascending: true }),
-  ]);
-
-  // Determine if viewing the current month for MTD pacing
-  const isCurrentMonth =
-    month === now.getMonth() + 1 && year === now.getFullYear();
-
-  // For current month, compute Month-to-Date targets from daily_metrics
-  const mtdCallTargets: Record<string, number> = {};
-  const mtdMeetingTargets: Record<string, number> = {};
-
-  if (isCurrentMonth) {
-    const pad = (n: number) => String(n).padStart(2, "0");
-    const today = `${year}-${pad(month)}-${pad(now.getDate())}`;
-
-    const { data: dailyRows } = await supabase
-      .from("daily_metrics")
-      .select("employee_id, target_calls, target_total_meetings")
-      .gte("date", `${year}-${pad(month)}-01`)
-      .lte("date", today);
-
-    for (const row of dailyRows ?? []) {
-      mtdCallTargets[row.employee_id] =
-        (mtdCallTargets[row.employee_id] ?? 0) + row.target_calls;
-      mtdMeetingTargets[row.employee_id] =
-        (mtdMeetingTargets[row.employee_id] ?? 0) +
-        row.target_total_meetings;
-    }
-  }
-
-  // Group city tours by employee
-  const toursByEmployee = new Map<string, CityTourWithCity[]>();
-  for (const row of (cityTours ?? []) as CityTourWithCity[]) {
-    const list = toursByEmployee.get(row.employee_id) ?? [];
-    list.push(row);
-    toursByEmployee.set(row.employee_id, list);
-  }
-
-  // Merge employees with their target/actual/city tour data
-  const data: EmployeeMonthlyData[] = employees.map((emp) => {
-    const target = targets?.find((t) => t.employee_id === emp.id) ?? null;
-    const actual = actuals?.find((a) => a.employee_id === emp.id) ?? null;
-    const tours = toursByEmployee.get(emp.id) ?? [];
-
-    // For current month, override synced targets with MTD pacing values
-    if (isCurrentMonth && target) {
-      return {
-        employee: emp,
-        target: {
-          ...target,
-          target_total_calls: mtdCallTargets[emp.id] ?? 0,
-          target_total_meetings: mtdMeetingTargets[emp.id] ?? 0,
-        },
-        actual,
-        cityTours: tours,
-      };
-    }
-
-    return { employee: emp, target, actual, cityTours: tours };
-  });
+  const query = params.query?.trim() ?? "";
 
   return (
     <div className="space-y-6">
@@ -126,14 +25,15 @@ export default async function MonthlyDataPage({
           Track monthly targets and actuals for all employees.
         </p>
       </div>
-      <PerformanceGrid
-        data={data}
-        userRole={userRole}
-        month={month}
-        year={year}
-        isCurrentMonth={isCurrentMonth}
-        cities={cities ?? []}
-      />
+
+      {/* Suspense key on month+year so period changes show skeleton.
+          Search changes use startTransition (old UI stays visible). */}
+      <Suspense
+        key={`${month}-${year}`}
+        fallback={<MonthlyDataTableSkeleton />}
+      >
+        <MonthlyDataContent month={month} year={year} query={query} />
+      </Suspense>
     </div>
   );
 }

@@ -5,11 +5,10 @@ import {
   useReactTable,
   getCoreRowModel,
   getSortedRowModel,
-  getFilteredRowModel,
   flexRender,
   type SortingState,
 } from "@tanstack/react-table";
-import { Search, CalendarDays, Building2 } from "lucide-react";
+import { Search, CalendarDays, Building2, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,7 +20,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 import type { EmployeeMonthlyData, UserRole, City } from "@/lib/types";
+import { useDebouncedSearch } from "@/hooks/use-debounced-search";
 import { getColumns } from "./columns";
 import { EmployeeDetailDialog } from "./employee-detail-dialog";
 import { ManageCitiesDialog } from "./manage-cities-dialog";
@@ -45,7 +46,7 @@ export function PerformanceGrid({
   cities,
 }: Props) {
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [globalFilter, setGlobalFilter] = useState("");
+  const { inputValue, setInputValue, isPending } = useDebouncedSearch("query", 300);
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<EmployeeMonthlyData | null>(
     null
@@ -57,19 +58,10 @@ export function PerformanceGrid({
   const table = useReactTable({
     data,
     columns,
-    state: { sorting, globalFilter },
+    state: { sorting },
     onSortingChange: setSorting,
-    onGlobalFilterChange: setGlobalFilter,
-    globalFilterFn: (row, _columnId, filterValue: string) => {
-      const search = filterValue.toLowerCase();
-      return (
-        row.original.employee.name.toLowerCase().includes(search) ||
-        row.original.employee.emp_id.toLowerCase().includes(search)
-      );
-    },
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
   });
 
   return (
@@ -80,10 +72,13 @@ export function PerformanceGrid({
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search employees..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
             className="pl-9"
           />
+          {isPending && (
+            <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+          )}
         </div>
         <div className="flex items-center gap-2">
           {userRole === "super_admin" && (
@@ -102,7 +97,7 @@ export function PerformanceGrid({
       </div>
 
       {/* Table */}
-      <Card className="border-0 py-0 gap-0 shadow-sm ring-1 ring-border/50 overflow-hidden transition-shadow duration-300 hover:shadow-md">
+      <Card className={cn("border-0 py-0 gap-0 shadow-sm ring-1 ring-border/50 overflow-hidden transition-all duration-300 hover:shadow-md", isPending && "opacity-60 pointer-events-none")}>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
         <Table>
@@ -158,7 +153,7 @@ export function PerformanceGrid({
                         No data for this month
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {globalFilter
+                        {inputValue
                           ? "Try adjusting your search."
                           : "Click on an employee row to enter their monthly data."}
                       </p>

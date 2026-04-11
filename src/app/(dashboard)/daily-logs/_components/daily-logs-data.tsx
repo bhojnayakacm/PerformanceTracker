@@ -1,28 +1,17 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import type { UserRole, DailyMetric } from "@/lib/types";
+import type { DailyMetric } from "@/lib/types";
+import { getAuthUser } from "@/lib/queries/auth";
 import { getEmployeesForUser } from "@/lib/queries/employees";
 import { DailyLogView } from "./daily-log-view";
 
 export async function DailyLogsData({ date }: { date: string }) {
-  const supabase = await createClient();
+  const auth = await getAuthUser();
+  if (!auth) redirect("/login");
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  const userRole = (profile?.role ?? "viewer") as UserRole;
+  const { supabase, id: userId, role: userRole } = auth;
 
   const [employees, { data: dailyMetrics }] = await Promise.all([
-    getEmployeesForUser(supabase, user.id, userRole, { activeOnly: true }),
+    getEmployeesForUser(supabase, userId, userRole, { activeOnly: true }),
     supabase.from("daily_metrics").select("*").eq("date", date),
   ]);
 

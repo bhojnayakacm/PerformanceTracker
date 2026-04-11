@@ -28,8 +28,8 @@ import {
 const navItems = [
   { title: "Dashboard", href: "/", icon: LayoutDashboard },
   { title: "Employees", href: "/employees", icon: Users },
-  { title: "Monthly Data", href: "/monthly-data", icon: CalendarDays },
   { title: "Daily Logs", href: "/daily-logs", icon: ClipboardList },
+  { title: "Monthly Data", href: "/monthly-data", icon: CalendarDays },
   { title: "Import Data", href: "/import", icon: Upload },
   { title: "User Management", href: "/users", icon: UserCog },
   { title: "Reports", href: "/reports", icon: BarChart3 },
