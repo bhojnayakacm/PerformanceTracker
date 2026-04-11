@@ -7,6 +7,7 @@ import {
   monthlyDataSchema,
   type MonthlyDataInput,
 } from "@/lib/validators/monthly-data";
+import type { City } from "@/lib/types";
 
 type ActionResult = { success: true } | { error: string };
 
@@ -30,9 +31,18 @@ async function getAuthenticatedRole() {
     .eq("id", user.id)
     .single();
 
-  return { supabase, userId: user.id, role: (profile?.role ?? "viewer") as string };
+  return {
+    supabase,
+    userId: user.id,
+    role: (profile?.role ?? "viewer") as string,
+  };
 }
 
+/* ─────────────────────────────────────────────────────────────
+   saveMonthlyData
+   — Upserts monthly_targets, monthly_actuals, AND diffs the
+     monthly_city_tours set for the (employee, month, year).
+   ───────────────────────────────────────────────────────────── */
 export async function saveMonthlyData(
   input: SaveInput
 ): Promise<ActionResult> {
@@ -52,7 +62,6 @@ export async function saveMonthlyData(
 
     const canEditTargets = role === "super_admin" || role === "manager";
 
-    // If manager, verify access to this employee
     if (role === "manager") {
       const hasAccess = await assertManagerEmployeeAccess(
         supabase,
@@ -66,8 +75,7 @@ export async function saveMonthlyData(
 
     const data = parsed.data;
 
-    // Upsert targets (super_admin and manager)
-    // Note: target_total_meetings & target_total_calls are now auto-synced from daily_metrics
+    // ── Upsert targets (super_admin / manager only) ──
     if (canEditTargets) {
       const { error: targetError } = await supabase
         .from("monthly_targets")
@@ -78,7 +86,6 @@ export async function saveMonthlyData(
             year,
             target_client_visits: data.target_client_visits,
             target_dispatched_sqft: data.target_dispatched_sqft,
-            target_tour_days: data.target_tour_days,
             target_travelling_cities: data.target_travelling_cities,
           },
           { onConflict: "employee_id,month,year" }
@@ -87,14 +94,9 @@ export async function saveMonthlyData(
       if (targetError) return { error: targetError.message };
     }
 
-    // Upsert actuals (super_admin, manager, and editor)
-    // Note: actual_calls, actual_architect_meetings, actual_client_meetings,
-    //       actual_site_visits are now auto-synced from daily_metrics
-    const cities = data.actual_travelling_cities
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-
+    // ── Upsert actuals ──
+    // Generated columns (actual_net_sale, actual_dispatched_sqft) are
+    // auto-filled by Postgres — DO NOT include them in the payload.
     const { error: actualError } = await supabase
       .from("monthly_actuals")
       .upsert(
@@ -103,11 +105,12 @@ export async function saveMonthlyData(
           month,
           year,
           actual_client_visits: data.actual_client_visits,
-          actual_dispatched_sqft: data.actual_dispatched_sqft,
-          actual_dispatched_amount: data.actual_dispatched_amount,
           actual_conversions: data.actual_conversions,
-          actual_tour_days: data.actual_tour_days,
-          actual_travelling_cities: cities.length > 0 ? cities : null,
+          actual_project_2: data.actual_project_2,
+          actual_project: data.actual_project,
+          actual_tile: data.actual_tile,
+          actual_retail: data.actual_retail,
+          actual_return: data.actual_return,
           salary: data.salary,
           tada: data.tada,
           incentive: data.incentive,
@@ -117,6 +120,76 @@ export async function saveMonthlyData(
       );
 
     if (actualError) return { error: actualError.message };
+
+    // ── Diff monthly_city_tours (delete-then-insert is cleanest for small sets) ──
+    const { error: deleteError } = await supabase
+      .from("monthly_city_tours")
+      .delete()
+      .eq("employee_id", employeeId)
+      .eq("month", month)
+      .eq("year", year);
+
+    if (deleteError) return { error: deleteError.message };
+
+    if (data.city_tours.length > 0) {
+      const rows = data.city_tours.map((t) => ({
+        employee_id: employeeId,
+        month,
+        year,
+        city_id: t.city_id,
+        target_days: t.target_days,
+        actual_days: t.actual_days,
+      }));
+
+      const { error: insertError } = await supabase
+        .from("monthly_city_tours")
+        .insert(rows);
+
+      if (insertError) return { error: insertError.message };
+    }
+
+    revalidatePath("/monthly-data");
+    return { success: true };
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   City pool management
+   ───────────────────────────────────────────────────────────── */
+
+export async function getCities(): Promise<City[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("cities")
+    .select("*")
+    .order("name", { ascending: true });
+  return data ?? [];
+}
+
+export async function addCity(name: string): Promise<ActionResult> {
+  const trimmed = name.trim();
+  if (!trimmed) return { error: "City name cannot be empty" };
+  if (trimmed.length > 64) return { error: "City name is too long" };
+
+  try {
+    const { supabase, role } = await getAuthenticatedRole();
+
+    if (role !== "super_admin") {
+      return { error: "Only Super Admins can add cities" };
+    }
+
+    const { error } = await supabase
+      .from("cities")
+      .insert({ name: trimmed });
+
+    if (error) {
+      if (error.code === "23505") {
+        return { error: `"${trimmed}" already exists in the pool` };
+      }
+      return { error: error.message };
+    }
 
     revalidatePath("/monthly-data");
     return { success: true };

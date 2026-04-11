@@ -1,6 +1,10 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import type { UserRole, EmployeeMonthlyData } from "@/lib/types";
+import type {
+  UserRole,
+  EmployeeMonthlyData,
+  CityTourWithCity,
+} from "@/lib/types";
 import { getEmployeesForUser } from "@/lib/queries/employees";
 import { PerformanceGrid } from "./_components/performance-grid";
 
@@ -30,7 +34,13 @@ export default async function MonthlyDataPage({
 
   const userRole = (profile?.role ?? "viewer") as UserRole;
 
-  const [employees, { data: targets }, { data: actuals }] = await Promise.all([
+  const [
+    employees,
+    { data: targets },
+    { data: actuals },
+    { data: cityTours },
+    { data: cities },
+  ] = await Promise.all([
     getEmployeesForUser(supabase, user.id, userRole, { activeOnly: true }),
     supabase
       .from("monthly_targets")
@@ -42,6 +52,12 @@ export default async function MonthlyDataPage({
       .select("*")
       .eq("month", month)
       .eq("year", year),
+    supabase
+      .from("monthly_city_tours")
+      .select("*, city:cities(id, name)")
+      .eq("month", month)
+      .eq("year", year),
+    supabase.from("cities").select("*").order("name", { ascending: true }),
   ]);
 
   // Determine if viewing the current month for MTD pacing
@@ -71,10 +87,19 @@ export default async function MonthlyDataPage({
     }
   }
 
-  // Merge employees with their target/actual data
+  // Group city tours by employee
+  const toursByEmployee = new Map<string, CityTourWithCity[]>();
+  for (const row of (cityTours ?? []) as CityTourWithCity[]) {
+    const list = toursByEmployee.get(row.employee_id) ?? [];
+    list.push(row);
+    toursByEmployee.set(row.employee_id, list);
+  }
+
+  // Merge employees with their target/actual/city tour data
   const data: EmployeeMonthlyData[] = employees.map((emp) => {
     const target = targets?.find((t) => t.employee_id === emp.id) ?? null;
     const actual = actuals?.find((a) => a.employee_id === emp.id) ?? null;
+    const tours = toursByEmployee.get(emp.id) ?? [];
 
     // For current month, override synced targets with MTD pacing values
     if (isCurrentMonth && target) {
@@ -86,10 +111,11 @@ export default async function MonthlyDataPage({
           target_total_meetings: mtdMeetingTargets[emp.id] ?? 0,
         },
         actual,
+        cityTours: tours,
       };
     }
 
-    return { employee: emp, target, actual };
+    return { employee: emp, target, actual, cityTours: tours };
   });
 
   return (
@@ -106,6 +132,7 @@ export default async function MonthlyDataPage({
         month={month}
         year={year}
         isCurrentMonth={isCurrentMonth}
+        cities={cities ?? []}
       />
     </div>
   );

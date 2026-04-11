@@ -65,7 +65,6 @@ export async function importTargets(
     target_total_calls: number;
     target_client_visits: number;
     target_dispatched_sqft: number;
-    target_tour_days: number;
     target_travelling_cities: number;
   }[]
 ): Promise<ImportResult> {
@@ -90,7 +89,6 @@ export async function importTargets(
       target_total_calls: number;
       target_client_visits: number;
       target_dispatched_sqft: number;
-      target_tour_days: number;
       target_travelling_cities: number;
     }[] = [];
 
@@ -137,11 +135,12 @@ export async function importActuals(
     actual_client_meetings: number;
     actual_site_visits: number;
     actual_client_visits: number;
-    actual_dispatched_sqft: number;
-    actual_dispatched_amount: number;
+    actual_project_2: number;
+    actual_project: number;
+    actual_tile: number;
+    actual_retail: number;
+    actual_return: number;
     actual_conversions: number;
-    actual_tour_days: number;
-    actual_travelling_cities?: string;
     salary: number;
     tada: number;
     incentive: number;
@@ -170,13 +169,6 @@ export async function importActuals(
         continue;
       }
 
-      const cities = row.actual_travelling_cities
-        ? row.actual_travelling_cities
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean)
-        : null;
-
       validRows.push({
         employee_id: employeeId,
         month: row.month,
@@ -186,11 +178,12 @@ export async function importActuals(
         actual_client_meetings: row.actual_client_meetings,
         actual_site_visits: row.actual_site_visits,
         actual_client_visits: row.actual_client_visits,
-        actual_dispatched_sqft: row.actual_dispatched_sqft,
-        actual_dispatched_amount: row.actual_dispatched_amount,
+        actual_project_2: row.actual_project_2,
+        actual_project: row.actual_project,
+        actual_tile: row.actual_tile,
+        actual_retail: row.actual_retail,
+        actual_return: row.actual_return,
         actual_conversions: row.actual_conversions,
-        actual_tour_days: row.actual_tour_days,
-        actual_travelling_cities: cities,
         salary: row.salary,
         tada: row.tada,
         incentive: row.incentive,

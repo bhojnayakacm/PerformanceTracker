@@ -143,11 +143,14 @@ export type Database = {
           actual_client_meetings: number
           actual_client_visits: number
           actual_conversions: number
-          actual_dispatched_amount: number
           actual_dispatched_sqft: number
+          actual_net_sale: number
+          actual_project: number
+          actual_project_2: number
+          actual_retail: number
+          actual_return: number
           actual_site_visits: number
-          actual_tour_days: number
-          actual_travelling_cities: string[] | null
+          actual_tile: number
           created_at: string
           employee_id: string
           id: string
@@ -166,11 +169,12 @@ export type Database = {
           actual_client_meetings?: number
           actual_client_visits?: number
           actual_conversions?: number
-          actual_dispatched_amount?: number
-          actual_dispatched_sqft?: number
+          actual_project?: number
+          actual_project_2?: number
+          actual_retail?: number
+          actual_return?: number
           actual_site_visits?: number
-          actual_tour_days?: number
-          actual_travelling_cities?: string[] | null
+          actual_tile?: number
           created_at?: string
           employee_id: string
           id?: string
@@ -189,11 +193,12 @@ export type Database = {
           actual_client_meetings?: number
           actual_client_visits?: number
           actual_conversions?: number
-          actual_dispatched_amount?: number
-          actual_dispatched_sqft?: number
+          actual_project?: number
+          actual_project_2?: number
+          actual_retail?: number
+          actual_return?: number
           actual_site_visits?: number
-          actual_tour_days?: number
-          actual_travelling_cities?: string[] | null
+          actual_tile?: number
           created_at?: string
           employee_id?: string
           id?: string
@@ -226,7 +231,6 @@ export type Database = {
           target_dispatched_sqft: number
           target_total_calls: number
           target_total_meetings: number
-          target_tour_days: number
           target_travelling_cities: number
           updated_at: string
           year: number
@@ -240,7 +244,6 @@ export type Database = {
           target_dispatched_sqft?: number
           target_total_calls?: number
           target_total_meetings?: number
-          target_tour_days?: number
           target_travelling_cities?: number
           updated_at?: string
           year: number
@@ -254,7 +257,6 @@ export type Database = {
           target_dispatched_sqft?: number
           target_total_calls?: number
           target_total_meetings?: number
-          target_tour_days?: number
           target_travelling_cities?: number
           updated_at?: string
           year?: number
@@ -265,6 +267,75 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cities: {
+        Row: {
+          id: string
+          name: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      monthly_city_tours: {
+        Row: {
+          id: string
+          employee_id: string
+          month: number
+          year: number
+          city_id: string
+          target_days: number
+          actual_days: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          employee_id: string
+          month: number
+          year: number
+          city_id: string
+          target_days?: number
+          actual_days?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          employee_id?: string
+          month?: number
+          year?: number
+          city_id?: string
+          target_days?: number
+          actual_days?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_city_tours_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_city_tours_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
             referencedColumns: ["id"]
           },
         ]

@@ -82,7 +82,7 @@ export function getColumns(isCurrentMonth?: boolean): ColumnDef<EmployeeMonthlyD
     },
     {
       id: "dispatch",
-      header: "Dispatch (SQFT)",
+      header: "Dispatched Qty (sqft.)",
       cell: ({ row }) => (
         <MetricCell
           target={row.original.target?.target_dispatched_sqft}
@@ -93,12 +93,17 @@ export function getColumns(isCurrentMonth?: boolean): ColumnDef<EmployeeMonthlyD
     {
       id: "tourDays",
       header: "Tour Days",
-      cell: ({ row }) => (
-        <MetricCell
-          target={row.original.target?.target_tour_days}
-          actual={row.original.actual?.actual_tour_days}
-        />
-      ),
+      cell: ({ row }) => {
+        const tours = row.original.cityTours ?? [];
+        const targetDays = tours.reduce((sum, t) => sum + t.target_days, 0);
+        const actualDays = tours.reduce((sum, t) => sum + t.actual_days, 0);
+        return (
+          <MetricCell
+            target={targetDays || null}
+            actual={actualDays || null}
+          />
+        );
+      },
     },
     {
       id: "costing",

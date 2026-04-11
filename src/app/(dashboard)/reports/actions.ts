@@ -97,10 +97,16 @@ export async function generateReport(
     .gte("year", minYear)
     .lte("year", maxYear);
 
-  const [{ data: targets }, { data: actuals }] = await Promise.all([
-    targetQuery,
-    actualQuery,
-  ]);
+  // Tour days are now aggregated from the relational city tours table.
+  const cityTourQuery = supabase
+    .from("monthly_city_tours")
+    .select("employee_id, month, year, target_days, actual_days")
+    .in("employee_id", employeeIds)
+    .gte("year", minYear)
+    .lte("year", maxYear);
+
+  const [{ data: targets }, { data: actuals }, { data: cityTours }] =
+    await Promise.all([targetQuery, actualQuery, cityTourQuery]);
 
   // Build lookup maps: key = "employeeId-month-year"
   const targetMap = new Map(
@@ -110,6 +116,19 @@ export async function generateReport(
     (actuals ?? []).map((a) => [`${a.employee_id}-${a.month}-${a.year}`, a])
   );
 
+  // Aggregate per (employee, month, year)
+  const tourDaysMap = new Map<
+    string,
+    { target: number; actual: number }
+  >();
+  for (const row of cityTours ?? []) {
+    const key = `${row.employee_id}-${row.month}-${row.year}`;
+    const curr = tourDaysMap.get(key) ?? { target: 0, actual: 0 };
+    curr.target += row.target_days;
+    curr.actual += row.actual_days;
+    tourDaysMap.set(key, curr);
+  }
+
   // Build rows
   const rows: ReportRow[] = [];
 
@@ -118,6 +137,7 @@ export async function generateReport(
       const key = `${emp.id}-${month}-${year}`;
       const t = targetMap.get(key);
       const a = actualMap.get(key);
+      const td = tourDaysMap.get(key);
 
       const salary = a?.salary ?? 0;
       const tada = a?.tada ?? 0;
@@ -141,9 +161,8 @@ export async function generateReport(
         actualClientVisits: a?.actual_client_visits ?? 0,
         targetDispatchSqft: t?.target_dispatched_sqft ?? 0,
         actualDispatchSqft: a?.actual_dispatched_sqft ?? 0,
-        actualDispatchAmount: a?.actual_dispatched_amount ?? 0,
-        targetTourDays: t?.target_tour_days ?? 0,
-        actualTourDays: a?.actual_tour_days ?? 0,
+        targetTourDays: td?.target ?? 0,
+        actualTourDays: td?.actual ?? 0,
         actualConversions: a?.actual_conversions ?? 0,
         salary,
         tada,

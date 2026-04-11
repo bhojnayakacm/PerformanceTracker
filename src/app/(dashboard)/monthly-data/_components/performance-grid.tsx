@@ -9,8 +9,9 @@ import {
   flexRender,
   type SortingState,
 } from "@tanstack/react-table";
-import { Search, CalendarDays } from "lucide-react";
+import { Search, CalendarDays, Building2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -20,9 +21,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { EmployeeMonthlyData, UserRole } from "@/lib/types";
+import type { EmployeeMonthlyData, UserRole, City } from "@/lib/types";
 import { getColumns } from "./columns";
-import { EmployeeDetailSheet } from "./employee-detail-sheet";
+import { EmployeeDetailDialog } from "./employee-detail-dialog";
+import { ManageCitiesDialog } from "./manage-cities-dialog";
 import { MonthSelector } from "@/components/month-selector";
 
 type Props = {
@@ -31,15 +33,24 @@ type Props = {
   month: number;
   year: number;
   isCurrentMonth?: boolean;
+  cities: City[];
 };
 
-export function PerformanceGrid({ data, userRole, month, year, isCurrentMonth }: Props) {
+export function PerformanceGrid({
+  data,
+  userRole,
+  month,
+  year,
+  isCurrentMonth,
+  cities,
+}: Props) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<EmployeeMonthlyData | null>(
     null
   );
+  const [manageCitiesOpen, setManageCitiesOpen] = useState(false);
 
   const columns = useMemo(() => getColumns(isCurrentMonth), [isCurrentMonth]);
 
@@ -74,7 +85,20 @@ export function PerformanceGrid({ data, userRole, month, year, isCurrentMonth }:
             className="pl-9"
           />
         </div>
-        <MonthSelector month={month} year={year} basePath="/monthly-data" />
+        <div className="flex items-center gap-2">
+          {userRole === "super_admin" && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 gap-1.5"
+              onClick={() => setManageCitiesOpen(true)}
+            >
+              <Building2 className="h-4 w-4" />
+              Manage Cities
+            </Button>
+          )}
+          <MonthSelector month={month} year={year} basePath="/monthly-data" />
+        </div>
       </div>
 
       {/* Table */}
@@ -106,7 +130,7 @@ export function PerformanceGrid({ data, userRole, month, year, isCurrentMonth }:
                   className="cursor-pointer hover:bg-muted/30 transition-colors"
                   onClick={() => {
                     setSelectedRow(row.original);
-                    setSheetOpen(true);
+                    setDetailOpen(true);
                   }}
                 >
                   {row.getVisibleCells().map((cell) => (
@@ -149,18 +173,28 @@ export function PerformanceGrid({ data, userRole, month, year, isCurrentMonth }:
         </CardContent>
       </Card>
 
-      {/* Detail Sheet */}
-      <EmployeeDetailSheet
-        open={sheetOpen}
+      {/* Detail Dialog — expansive bento-grid takeover */}
+      <EmployeeDetailDialog
+        open={detailOpen}
         onOpenChange={(open) => {
-          setSheetOpen(open);
+          setDetailOpen(open);
           if (!open) setSelectedRow(null);
         }}
         data={selectedRow}
         month={month}
         year={year}
         userRole={userRole}
+        cities={cities}
       />
+
+      {/* Manage Cities Dialog (super_admin only) */}
+      {userRole === "super_admin" && (
+        <ManageCitiesDialog
+          open={manageCitiesOpen}
+          onOpenChange={setManageCitiesOpen}
+          cities={cities}
+        />
+      )}
     </div>
   );
 }

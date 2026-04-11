@@ -20,7 +20,6 @@ export type ReportRow = {
   actualClientVisits: number;
   targetDispatchSqft: number;
   actualDispatchSqft: number;
-  actualDispatchAmount: number;
   targetTourDays: number;
   actualTourDays: number;
   actualConversions: number;
