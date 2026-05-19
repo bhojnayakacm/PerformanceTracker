@@ -20,6 +20,7 @@ import {
   Loader2,
   MapPin,
   Package,
+  Plus,
   Route,
   Target,
   Trash2,
@@ -380,34 +381,38 @@ export function EmployeeDetailDialog({
     [salary, tada, incentive, salesPromotion]
   );
 
-  /* ── City tour handlers ── */
-  const handleTargetCitiesChange = useCallback(
-    (rawValue: string) => {
-      const next = Math.max(0, parseInt(rawValue || "0", 10) || 0);
-      // shouldDirty so the count input itself enters the pending visual
-      // state when this field is what the user actually changed.
-      form.setValue("target_travelling_cities", next, {
+  /* ── City tour handlers ──
+   *
+   * The cityTours array is the source of truth; `target_travelling_cities`
+   * is a mirror kept in sync inside the same setCityTours callback so the
+   * Zod refine `city_tours.length === target_travelling_cities` can never
+   * fail at submit time.
+   *
+   * The previous "count input drives recreate" model had a state-destruction
+   * bug: every keystroke (including the intermediate empty string between
+   * "5" → backspace → "6") fed parseInt, parsed "" as 0, and ran
+   * `slice(0, 0)` — wiping every filled card before the user finished
+   * typing the new number. Add/remove are now exclusively driven by the
+   * explicit "Add City" button and per-card Trash, so there is no
+   * keystroke-level path to "shrink to 0 then grow to N". */
+  const appendCityTour = useCallback(() => {
+    setCityTours((prev) => {
+      const next = [
+        ...prev,
+        {
+          _uid: newUid(),
+          city_id: null,
+          target_days: 0,
+          actual_days: 0,
+        },
+      ];
+      form.setValue("target_travelling_cities", next.length, {
         shouldValidate: true,
         shouldDirty: true,
       });
-      setCityTours((prev) => {
-        if (prev.length === next) return prev;
-        if (prev.length < next) {
-          return [
-            ...prev,
-            ...Array.from({ length: next - prev.length }, () => ({
-              _uid: newUid(),
-              city_id: null,
-              target_days: 0,
-              actual_days: 0,
-            })),
-          ];
-        }
-        return prev.slice(0, next);
-      });
-    },
-    [form]
-  );
+      return next;
+    });
+  }, [form]);
 
   const updateCityTour = useCallback(
     (index: number, patch: Partial<CityTourEntry>) => {
@@ -543,7 +548,6 @@ export function EmployeeDetailDialog({
   const totalMeetingsActual =
     actualArchitect + actualClient + actualSiteVisits;
 
-  const targetTravelingCount = form.watch("target_travelling_cities") || 0;
   const persistedCosting = data?.actual?.total_costing ?? null;
 
   const selectedIds = useMemo(
@@ -886,24 +890,30 @@ export function EmployeeDetailDialog({
                         >
                           Target Cities
                         </Label>
-                        <PendingInput
+                        {/* Derived counter — cityTours.length is the source
+                         *  of truth; this badge is purely a readout. The
+                         *  underlying form field `target_travelling_cities`
+                         *  is kept in sync by appendCityTour / removeCityTour
+                         *  so Zod's `length === count` refine still holds. */}
+                        <span
                           id="target-cities"
-                          type="number"
-                          {...NUM_INPUT_PROPS}
-                          max={20}
-                          value={targetTravelingCount}
-                          onChange={(e) =>
-                            handleTargetCitiesChange(e.target.value)
-                          }
-                          disabled={!canEditTargets}
-                          pending={isFieldPending("target_travelling_cities")}
-                          wrapperClassName="w-16"
-                          className="h-8 w-16 text-right text-sm tabular-nums"
-                        />
+                          aria-live="polite"
+                          aria-label={`${cityTours.length} target ${
+                            cityTours.length === 1 ? "city" : "cities"
+                          }`}
+                          className={cn(
+                            "inline-flex h-8 min-w-[3rem] items-center justify-center rounded-md border border-indigo-200/70 bg-indigo-50/60 px-2 text-sm font-semibold tabular-nums text-indigo-700 transition-colors",
+                            "dark:border-indigo-900/60 dark:bg-indigo-950/40 dark:text-indigo-300",
+                            isFieldPending("target_travelling_cities") &&
+                              "ring-1 ring-indigo-300 bg-indigo-100/80 dark:ring-indigo-700 dark:bg-indigo-950/60",
+                          )}
+                        >
+                          {cityTours.length}
+                        </span>
                       </div>
                     }
                   >
-                    {targetTravelingCount === 0 ? (
+                    {cityTours.length === 0 ? (
                       <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
                         <div className="flex size-12 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-950/50 ring-1 ring-indigo-200/60 dark:ring-indigo-900/60">
                           <MapPin className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
@@ -914,7 +924,7 @@ export function EmployeeDetailDialog({
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {canEditTargets
-                              ? "Set a target above to start adding cities."
+                              ? "Click “Add City” below to start tracking tours."
                               : "No cities logged for this month."}
                           </p>
                         </div>
@@ -958,6 +968,26 @@ export function EmployeeDetailDialog({
                           </div>
                         </div>
                       </>
+                    )}
+
+                    {/* Explicit add button — replaces the
+                     *  "type-the-new-count" affordance that previously
+                     *  destroyed state on every intermediate keystroke.
+                     *  Disabled mid-save (isPending) so the user can't
+                     *  shift the array while the diff against
+                     *  originalCityToursRef is in flight. */}
+                    {canEditTargets && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={appendCityTour}
+                        disabled={isPending}
+                        className="mt-4 w-full border-dashed border-indigo-300/70 text-indigo-700 hover:bg-indigo-50 hover:text-indigo-800 dark:border-indigo-800/70 dark:text-indigo-300 dark:hover:bg-indigo-950/40"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add City
+                      </Button>
                     )}
                   </PerfSubSection>
                 </SectionCard>
