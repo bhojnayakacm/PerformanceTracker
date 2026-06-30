@@ -177,6 +177,7 @@ export function MonthRangeSelector({
     const fy = currentFY(now);
     const lastFy = currentFY(new Date(now.getFullYear() - 1, now.getMonth(), 1));
     return [
+      { label: "This Month", range: lastNMonths(now, 1) },
       { label: "This FY", range: fy },
       { label: "Last FY", range: lastFy },
       { label: "Last 6 months", range: lastNMonths(now, 6) },

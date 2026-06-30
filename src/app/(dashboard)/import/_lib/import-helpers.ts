@@ -69,7 +69,8 @@ const TEMPLATES: Record<ImportType, { headers: string[]; rows: string[][] }> = {
       "year",
       "actual_client_visits",
       "actual_conversions",
-      "actual_project",
+      "actual_commercial_project",
+      "actual_hotel_project",
       "actual_project_2",
       "actual_tile",
       "actual_retail",
@@ -77,6 +78,7 @@ const TEMPLATES: Record<ImportType, { headers: string[]; rows: string[][] }> = {
       "salary",
       "tada",
       "incentive",
+      "actual_vendor_costing",
       "sales_promotion",
     ],
     rows: [
@@ -87,6 +89,7 @@ const TEMPLATES: Record<ImportType, { headers: string[]; rows: string[][] }> = {
         "8",
         "5",
         "150",
+        "60",
         "100",
         "120",
         "80",
@@ -94,6 +97,7 @@ const TEMPLATES: Record<ImportType, { headers: string[]; rows: string[][] }> = {
         "50000",
         "10000",
         "5000",
+        "4000",
         "3000",
       ],
     ],
@@ -374,14 +378,15 @@ const targetRowSchema = z.object({
 
 // Stripped: actual_calls / *_meetings / actual_site_visits are trigger-managed.
 // actual_net_sale + actual_dispatched_sqft are GENERATED columns — never included.
-// total_costing is auto-computed server-side as (salary + tada + incentive) to
-// mirror the manual entry form — sales_promotion is tracked but NOT summed in.
+// total_costing is auto-computed server-side as (salary + tada + incentive +
+// actual_vendor_costing) — sales_promotion is tracked but NOT summed in.
 const actualRowSchema = z.object({
   name: employeeNameField,
   ...monthYear,
   actual_client_visits: metric,
   actual_conversions: metric,
-  actual_project: metric,
+  actual_commercial_project: metric,
+  actual_hotel_project: metric,
   actual_project_2: metric,
   actual_tile: metric,
   actual_retail: metric,
@@ -389,6 +394,7 @@ const actualRowSchema = z.object({
   salary: metric,
   tada: metric,
   incentive: metric,
+  actual_vendor_costing: metric,
   sales_promotion: metric,
 });
 

@@ -51,7 +51,11 @@ export const monthlyDataSchema = z
       .number()
       .int("Must be a whole number")
       .min(0, "Cannot be negative"),
-    actual_project: z.coerce
+    actual_commercial_project: z.coerce
+      .number()
+      .int("Must be a whole number")
+      .min(0, "Cannot be negative"),
+    actual_hotel_project: z.coerce
       .number()
       .int("Must be a whole number")
       .min(0, "Cannot be negative"),
@@ -72,6 +76,7 @@ export const monthlyDataSchema = z
     salary: z.coerce.number().min(0, "Cannot be negative"),
     tada: z.coerce.number().min(0, "Cannot be negative"),
     incentive: z.coerce.number().min(0, "Cannot be negative"),
+    actual_vendor_costing: z.coerce.number().min(0, "Cannot be negative"),
     sales_promotion: z.coerce.number().min(0, "Cannot be negative"),
 
     // Nested city tours (must match target_travelling_cities length)

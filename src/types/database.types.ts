@@ -156,15 +156,17 @@ export type Database = {
           actual_calls: number
           actual_client_meetings: number
           actual_client_visits: number
+          actual_commercial_project: number
           actual_conversions: number
           actual_dispatched_sqft: number
+          actual_hotel_project: number
           actual_net_sale: number
-          actual_project: number
           actual_project_2: number
           actual_retail: number
           actual_return: number
           actual_site_visits: number
           actual_tile: number
+          actual_vendor_costing: number
           created_at: string
           employee_id: string
           id: string
@@ -182,13 +184,15 @@ export type Database = {
           actual_calls?: number
           actual_client_meetings?: number
           actual_client_visits?: number
+          actual_commercial_project?: number
           actual_conversions?: number
-          actual_project?: number
+          actual_hotel_project?: number
           actual_project_2?: number
           actual_retail?: number
           actual_return?: number
           actual_site_visits?: number
           actual_tile?: number
+          actual_vendor_costing?: number
           created_at?: string
           employee_id: string
           id?: string
@@ -206,13 +210,15 @@ export type Database = {
           actual_calls?: number
           actual_client_meetings?: number
           actual_client_visits?: number
+          actual_commercial_project?: number
           actual_conversions?: number
-          actual_project?: number
+          actual_hotel_project?: number
           actual_project_2?: number
           actual_retail?: number
           actual_return?: number
           actual_site_visits?: number
           actual_tile?: number
+          actual_vendor_costing?: number
           created_at?: string
           employee_id?: string
           id?: string
@@ -406,6 +412,22 @@ export type Database = {
           mtd_actual_architect_meetings: number
           mtd_actual_client_meetings: number
           mtd_actual_site_visits: number
+        }[]
+      }
+      get_dashboard_kpis: {
+        Args: {
+          _from_month: number
+          _from_year: number
+          _to_month: number
+          _to_year: number
+          _employee_ids?: string[] | null
+        }
+        Returns: {
+          dispatch_target: number
+          dispatch_actual: number
+          visits_target: number
+          visits_actual: number
+          conversions_actual: number
         }[]
       }
     }

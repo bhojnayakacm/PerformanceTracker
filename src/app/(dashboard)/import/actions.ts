@@ -454,7 +454,8 @@ export async function importActuals(
     year: number;
     actual_client_visits: number;
     actual_conversions: number;
-    actual_project: number;
+    actual_commercial_project: number;
+    actual_hotel_project: number;
     actual_project_2: number;
     actual_tile: number;
     actual_retail: number;
@@ -462,6 +463,7 @@ export async function importActuals(
     salary: number;
     tada: number;
     incentive: number;
+    actual_vendor_costing: number;
     sales_promotion: number;
   }[],
   csvHeaders: string[],
@@ -485,9 +487,10 @@ export async function importActuals(
         return;
       }
 
-      // total_costing is a GENERATED column in Postgres (salary + tada + incentive);
-      // including it in the payload throws `cannot insert a non-DEFAULT value`.
-      // sales_promotion is tracked separately and intentionally excluded from the sum.
+      // total_costing is a GENERATED column in Postgres (salary + tada +
+      // incentive + actual_vendor_costing); including it in the payload throws
+      // `cannot insert a non-DEFAULT value`. sales_promotion is tracked
+      // separately and intentionally excluded from the sum.
       const payload: TablesInsert<"monthly_actuals"> = {
         employee_id: employeeId,
         month: row.month,
@@ -497,7 +500,10 @@ export async function importActuals(
         payload.actual_client_visits = row.actual_client_visits;
       if (has("actual_conversions"))
         payload.actual_conversions = row.actual_conversions;
-      if (has("actual_project")) payload.actual_project = row.actual_project;
+      if (has("actual_commercial_project"))
+        payload.actual_commercial_project = row.actual_commercial_project;
+      if (has("actual_hotel_project"))
+        payload.actual_hotel_project = row.actual_hotel_project;
       if (has("actual_project_2"))
         payload.actual_project_2 = row.actual_project_2;
       if (has("actual_tile")) payload.actual_tile = row.actual_tile;
@@ -506,6 +512,8 @@ export async function importActuals(
       if (has("salary")) payload.salary = row.salary;
       if (has("tada")) payload.tada = row.tada;
       if (has("incentive")) payload.incentive = row.incentive;
+      if (has("actual_vendor_costing"))
+        payload.actual_vendor_costing = row.actual_vendor_costing;
       if (has("sales_promotion"))
         payload.sales_promotion = row.sales_promotion;
       validRows.push(payload);

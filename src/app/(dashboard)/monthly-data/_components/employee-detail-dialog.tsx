@@ -183,7 +183,8 @@ function getDefaultValues(data: EmployeeMonthlyData | null): MonthlyDataInput {
     actual_conversions: data?.actual?.actual_conversions ?? 0,
 
     actual_project_2: data?.actual?.actual_project_2 ?? 0,
-    actual_project: data?.actual?.actual_project ?? 0,
+    actual_commercial_project: data?.actual?.actual_commercial_project ?? 0,
+    actual_hotel_project: data?.actual?.actual_hotel_project ?? 0,
     actual_tile: data?.actual?.actual_tile ?? 0,
     actual_retail: data?.actual?.actual_retail ?? 0,
     actual_return: data?.actual?.actual_return ?? 0,
@@ -191,6 +192,7 @@ function getDefaultValues(data: EmployeeMonthlyData | null): MonthlyDataInput {
     salary: data?.actual?.salary ?? 0,
     tada: data?.actual?.tada ?? 0,
     incentive: data?.actual?.incentive ?? 0,
+    actual_vendor_costing: data?.actual?.actual_vendor_costing ?? 0,
     sales_promotion: data?.actual?.sales_promotion ?? 0,
 
     city_tours: alignedTours,
@@ -348,14 +350,20 @@ export function EmployeeDetailDialog({
 
   /* ── Live-calculated roll-ups ── */
   const project2 = form.watch("actual_project_2") || 0;
-  const project = form.watch("actual_project") || 0;
+  const commercialProject = form.watch("actual_commercial_project") || 0;
+  const hotelProject = form.watch("actual_hotel_project") || 0;
   const tile = form.watch("actual_tile") || 0;
   const retail = form.watch("actual_retail") || 0;
   const returnVal = form.watch("actual_return") || 0;
 
   const netSale = useMemo(
-    () => Number(project2) + Number(project) + Number(tile) + Number(retail),
-    [project2, project, tile, retail]
+    () =>
+      Number(project2) +
+      Number(commercialProject) +
+      Number(hotelProject) +
+      Number(tile) +
+      Number(retail),
+    [project2, commercialProject, hotelProject, tile, retail]
   );
   const dispatchedTotal = useMemo(
     () => netSale + Number(returnVal),
@@ -374,11 +382,15 @@ export function EmployeeDetailDialog({
   const salary = form.watch("salary") || 0;
   const tada = form.watch("tada") || 0;
   const incentive = form.watch("incentive") || 0;
-  const salesPromotion = form.watch("sales_promotion") || 0;
+  const vendorCosting = form.watch("actual_vendor_costing") || 0;
+  // Mirrors the DB generated column exactly: salary + tada + incentive +
+  // vendor_costing. sales_promotion is tracked but intentionally excluded from
+  // total_costing, so it is NOT summed here — keeping the "Live preview"
+  // identical to the persisted "Auto-calculated" value.
   const costingPreview = useMemo(
     () =>
-      Number(salary) + Number(tada) + Number(incentive) + Number(salesPromotion),
-    [salary, tada, incentive, salesPromotion]
+      Number(salary) + Number(tada) + Number(incentive) + Number(vendorCosting),
+    [salary, tada, incentive, vendorCosting]
   );
 
   /* ── City tour handlers ──
@@ -812,11 +824,18 @@ export function EmployeeDetailDialog({
                           pending={isFieldPending("actual_project_2")}
                         />
                         <BreakdownInput
-                          label="Project"
-                          field="actual_project"
+                          label="Commercial Project"
+                          field="actual_commercial_project"
                           form={form}
                           canEdit={canEdit}
-                          pending={isFieldPending("actual_project")}
+                          pending={isFieldPending("actual_commercial_project")}
+                        />
+                        <BreakdownInput
+                          label="Hotel Project"
+                          field="actual_hotel_project"
+                          form={form}
+                          canEdit={canEdit}
+                          pending={isFieldPending("actual_hotel_project")}
                         />
                         <BreakdownInput
                           label="Tile"
@@ -1042,6 +1061,13 @@ export function EmployeeDetailDialog({
                       form={form}
                       canEdit={canEdit}
                       pending={isFieldPending("incentive")}
+                    />
+                    <CostingRow
+                      label="Vendor Costing"
+                      field="actual_vendor_costing"
+                      form={form}
+                      canEdit={canEdit}
+                      pending={isFieldPending("actual_vendor_costing")}
                     />
                     <CostingRow
                       label="Sales Promotion"

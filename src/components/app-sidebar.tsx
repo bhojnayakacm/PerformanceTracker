@@ -35,7 +35,6 @@ import {
   ClipboardList,
   Upload,
   UserCog,
-  BarChart3,
 } from "lucide-react";
 import {
   Sidebar,
@@ -61,7 +60,6 @@ const navItems = [
   { title: "Cumulative Data", href: "/cumulative-data", icon: CalendarRange },
   { title: "Import Data", href: "/import", icon: Upload },
   { title: "User Management", href: "/users", icon: UserCog },
-  { title: "Reports", href: "/reports", icon: BarChart3 },
 ];
 
 const HOVER_DEBOUNCE_MS = 150;
