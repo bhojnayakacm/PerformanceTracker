@@ -430,6 +430,68 @@ export type Database = {
           conversions_actual: number
         }[]
       }
+      get_employee_meetings_series: {
+        Args: {
+          _employee_id: string
+          _from: string
+          _to: string
+          _bucket?: string
+        }
+        Returns: {
+          bucket_start: string
+          architect_meetings: number
+          client_meetings: number
+          site_visits: number
+          calls: number
+          target_meetings: number
+          target_calls: number
+        }[]
+      }
+      get_employee_monthly_series: {
+        Args: {
+          _employee_id: string
+          _from_month: number
+          _from_year: number
+          _to_month: number
+          _to_year: number
+        }
+        Returns: {
+          month: number
+          year: number
+          commercial_project: number
+          hotel_project: number
+          project_2: number
+          tile: number
+          retail: number
+          return_sqft: number
+          net_sale: number
+          dispatched_sqft: number
+          target_dispatched_sqft: number
+          client_visits: number
+          target_client_visits: number
+          conversions: number
+          salary: number
+          tada: number
+          incentive: number
+          vendor_costing: number
+          sales_promotion: number
+          total_costing: number
+        }[]
+      }
+      get_employee_tour_series: {
+        Args: {
+          _employee_id: string
+          _from_month: number
+          _from_year: number
+          _to_month: number
+          _to_year: number
+        }
+        Returns: {
+          city_name: string
+          target_days: number
+          actual_days: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

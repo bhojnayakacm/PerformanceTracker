@@ -32,6 +32,7 @@ import {
   Users,
   CalendarDays,
   CalendarRange,
+  ChartColumnBig,
   ClipboardList,
   Upload,
   UserCog,
@@ -58,6 +59,7 @@ const navItems = [
   { title: "Daily Logs", href: "/daily-logs", icon: ClipboardList },
   { title: "Monthly Data", href: "/monthly-data", icon: CalendarDays },
   { title: "Cumulative Data", href: "/cumulative-data", icon: CalendarRange },
+  { title: "Report", href: "/report", icon: ChartColumnBig },
   { title: "Import Data", href: "/import", icon: Upload },
   { title: "User Management", href: "/users", icon: UserCog },
 ];

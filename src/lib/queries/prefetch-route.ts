@@ -127,8 +127,9 @@ export function prefetchRoute(
     return;
   }
 
-  // /, /employees, /users, /import, /reports aren't part of the
-  // Phase 1-3 TanStack Query split — Next.js's RSC prefetch already
-  // covers them. We deliberately no-op rather than guess at their
-  // internal fetch shape.
+  // /, /employees, /users, /import, /report aren't part of this
+  // TanStack Query split — Next.js's RSC prefetch already covers them.
+  // (/report's per-card queries are keyed on a selected employee that
+  // isn't known at hover time, so there's nothing useful to warm here.)
+  // We deliberately no-op rather than guess at their internal fetch shape.
 }
