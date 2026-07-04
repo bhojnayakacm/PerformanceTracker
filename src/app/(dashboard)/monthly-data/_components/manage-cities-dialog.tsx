@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import {
   Building2,
@@ -10,6 +11,7 @@ import {
   Pencil,
   Plus,
   Trash2,
+  Upload,
   X,
 } from "lucide-react";
 import {
@@ -277,6 +279,21 @@ export function ManageCitiesDialog({ open, onOpenChange, cities }: Props) {
                     </>
                   )}
                 </Button>
+              </div>
+
+              {/* Shortcut to the bulk City Pool importer on /import. Safe to
+                  show unconditionally — this dialog only renders for
+                  super_admins, who are the only role /import admits. */}
+              <div className="flex items-center gap-1.5 border-t pt-2 text-xs text-muted-foreground">
+                <span>Adding a lot of cities?</span>
+                <Link
+                  href="/import"
+                  onClick={() => onOpenChange(false)}
+                  className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+                >
+                  <Upload className="h-3.5 w-3.5" />
+                  Bulk import from CSV
+                </Link>
               </div>
             </div>
           </div>
