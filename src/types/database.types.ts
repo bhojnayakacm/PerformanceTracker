@@ -492,6 +492,15 @@ export type Database = {
           actual_days: number
         }[]
       }
+      bulk_add_cities: {
+        Args: { _names: string[] }
+        Returns: {
+          inserted_count: number
+          skipped_count: number
+          inserted_names: string[]
+          skipped_names: string[]
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

@@ -829,3 +829,49 @@ export async function importCityTours(
     return { error: (e as Error).message };
   }
 }
+
+/* ─────────────────────────────────────────────────────────────
+   City Pool — bulk-populate the master city list from a raw list
+   of names (no employee reference, unlike City Tours). The
+   case-insensitive de-dupe + skip-existing + insert is delegated
+   to the bulk_add_cities RPC (migration 0024) for a single atomic
+   round-trip; this action just gatekeeps + revalidates.
+───────────────────────────────────────────────────────────── */
+
+export type CityPoolImportResult = {
+  inserted: number;
+  skipped: number;
+  insertedNames: string[];
+  skippedNames: string[];
+};
+
+export async function importCityPool(
+  names: string[],
+): Promise<CityPoolImportResult | { error: string }> {
+  try {
+    const supabase = await assertSuperAdmin();
+
+    const clean = names.map((n) => n.trim()).filter(Boolean);
+    if (clean.length === 0) {
+      return { error: "No city names to import." };
+    }
+
+    const { data, error } = await supabase.rpc("bulk_add_cities", {
+      _names: clean,
+    });
+    if (error) return { error: error.message };
+
+    const row = data?.[0];
+    revalidatePath("/monthly-data");
+    revalidatePath("/import");
+
+    return {
+      inserted: row?.inserted_count ?? 0,
+      skipped: row?.skipped_count ?? 0,
+      insertedNames: row?.inserted_names ?? [],
+      skippedNames: row?.skipped_names ?? [],
+    };
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
+}
