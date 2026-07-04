@@ -219,3 +219,26 @@ export function monthlyWindowLabel(w: MonthlyWindow): string {
     w.toYear,
   )}`;
 }
+
+/** Build a DailyWindow from two arbitrary dates, choosing the server bucket
+ *  by span so the chart never renders hundreds of daily points: ≤31 days →
+ *  day, ≤120 → week, else month. */
+export function dailyWindowFromDates(from: Date, to: Date): DailyWindow {
+  const spanDays = Math.round((to.getTime() - from.getTime()) / 86_400_000) + 1;
+  const bucket: DailyBucket =
+    spanDays <= 31 ? "day" : spanDays <= 120 ? "week" : "month";
+  return { from: iso(from), to: iso(to), bucket };
+}
+
+/** Human label for a daily window, e.g. "12 Feb – 15 May '26" (drops the
+ *  year on the start when both ends share it). */
+export function dailyWindowLabel(w: DailyWindow): string {
+  const f = new Date(`${w.from}T00:00:00`);
+  const t = new Date(`${w.to}T00:00:00`);
+  const sameYear = f.getFullYear() === t.getFullYear();
+  const part = (d: Date, withYear: boolean) =>
+    `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}${
+      withYear ? ` '${String(d.getFullYear()).slice(2)}` : ""
+    }`;
+  return `${part(f, !sameYear)} – ${part(t, true)}`;
+}
