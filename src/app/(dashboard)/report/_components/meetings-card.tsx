@@ -8,6 +8,11 @@
  * flow, so an area over an ordered time axis shows both total volume and the
  * mix evolving; the line marks the target the three actuals are measured
  * against (target_total_meetings is defined over exactly those three).
+ *
+ * A segmented toggle above the chart isolates a single type ("All" stacks
+ * them together and shows the target; the individual views drop the target
+ * line, since there's no per-type target). The footer always reports each
+ * type's total for the selected window regardless of the chart view.
  */
 
 import { useMemo, useState } from "react";
@@ -21,6 +26,7 @@ import {
   YAxis,
 } from "recharts";
 import { Handshake } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import {
   ChartContainer,
@@ -62,6 +68,43 @@ const config = {
   target: { label: "Target", color: "#334155" },
 } satisfies ChartConfig;
 
+type MeetingView = "all" | "architect" | "client" | "site";
+
+const VIEWS: { key: MeetingView; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "architect", label: "Architect" },
+  { key: "client", label: "Client" },
+  { key: "site", label: "Site" },
+];
+
+function MeetingViewToggle({
+  value,
+  onChange,
+}: {
+  value: MeetingView;
+  onChange: (v: MeetingView) => void;
+}) {
+  return (
+    <div className="inline-flex items-center gap-0.5 rounded-lg bg-slate-100 p-0.5">
+      {VIEWS.map((v) => (
+        <button
+          key={v.key}
+          type="button"
+          onClick={() => onChange(v.key)}
+          className={cn(
+            "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+            value === v.key
+              ? "bg-white text-indigo-700 shadow-sm"
+              : "text-slate-500 hover:text-slate-700",
+          )}
+        >
+          {v.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function MeetingsCard({
   employeeId,
   userId,
@@ -71,6 +114,7 @@ export function MeetingsCard({
 }) {
   const supabase = useMemo(() => createClient(), []);
   const [window, setWindow] = useState<DailyWindow>(() => defaultDailyWindow());
+  const [view, setView] = useState<MeetingView>("all");
 
   const params = { employeeId, window, userId };
   const { data, isFetching } = useQuery({
@@ -96,6 +140,10 @@ export function MeetingsCard({
       : null;
   const status = attainmentStatus(attainment);
 
+  const showArchitect = view === "all" || view === "architect";
+  const showClient = view === "all" || view === "client";
+  const showSite = view === "all" || view === "site";
+
   return (
     <ReportCardShell
       title="Meetings & Field Activity"
@@ -113,6 +161,10 @@ export function MeetingsCard({
         <ReportCardEmpty message="No activity logged in this range." />
       ) : (
         <>
+          <div className="mb-3">
+            <MeetingViewToggle value={view} onChange={setView} />
+          </div>
+
           <ChartContainer config={config} className="aspect-auto h-[240px] w-full">
             <ComposedChart data={chartData} margin={{ left: 4, right: 8, top: 8 }}>
               <CartesianGrid vertical={false} strokeDasharray="3 3" />
@@ -131,46 +183,61 @@ export function MeetingsCard({
                 tickFormatter={(v) => fmtCompact(Number(v))}
               />
               <ChartTooltip content={<ChartTooltipContent />} />
-              <Area
-                dataKey="architect"
-                stackId="a"
-                type="monotone"
-                stroke="var(--color-architect)"
-                fill="var(--color-architect)"
-                fillOpacity={0.2}
-                strokeWidth={2}
-              />
-              <Area
-                dataKey="client"
-                stackId="a"
-                type="monotone"
-                stroke="var(--color-client)"
-                fill="var(--color-client)"
-                fillOpacity={0.2}
-                strokeWidth={2}
-              />
-              <Area
-                dataKey="siteVisits"
-                stackId="a"
-                type="monotone"
-                stroke="var(--color-siteVisits)"
-                fill="var(--color-siteVisits)"
-                fillOpacity={0.2}
-                strokeWidth={2}
-              />
-              <Line
-                dataKey="target"
-                type="monotone"
-                stroke="var(--color-target)"
-                strokeWidth={2}
-                strokeDasharray="4 4"
-                dot={false}
-              />
+              {showArchitect && (
+                <Area
+                  dataKey="architect"
+                  stackId="a"
+                  type="monotone"
+                  stroke="var(--color-architect)"
+                  fill="var(--color-architect)"
+                  fillOpacity={0.2}
+                  strokeWidth={2}
+                />
+              )}
+              {showClient && (
+                <Area
+                  dataKey="client"
+                  stackId="a"
+                  type="monotone"
+                  stroke="var(--color-client)"
+                  fill="var(--color-client)"
+                  fillOpacity={0.2}
+                  strokeWidth={2}
+                />
+              )}
+              {showSite && (
+                <Area
+                  dataKey="siteVisits"
+                  stackId="a"
+                  type="monotone"
+                  stroke="var(--color-siteVisits)"
+                  fill="var(--color-siteVisits)"
+                  fillOpacity={0.2}
+                  strokeWidth={2}
+                />
+              )}
+              {view === "all" && (
+                <Line
+                  dataKey="target"
+                  type="monotone"
+                  stroke="var(--color-target)"
+                  strokeWidth={2}
+                  strokeDasharray="4 4"
+                  dot={false}
+                />
+              )}
               <ChartLegend content={<ChartLegendContent />} />
             </ComposedChart>
           </ChartContainer>
 
           <StatRow>
+            <StatItem label="Architect" value={fmtNum(data.totals.architect)} />
+            <StatItem label="Client" value={fmtNum(data.totals.client)} />
+            <StatItem label="Site visits" value={fmtNum(data.totals.siteVisits)} />
+            <span
+              className="hidden h-8 w-px self-center bg-slate-200 sm:block"
+              aria-hidden
+            />
             <StatItem label="Meetings" value={fmtNum(data.totals.meetings)} />
             <StatItem
               label="Target"

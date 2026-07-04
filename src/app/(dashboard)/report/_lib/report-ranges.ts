@@ -8,13 +8,15 @@
  *     [from, to] month range — these have no sub-monthly data, so offering
  *     "Last 7 Days" here would be a lie against the schema.
  *
- * Every preset ends at "today" / the current month so a card never paints
- * empty future buckets, matching the present-day-cap philosophy the
- * Dashboard and Cumulative pages already use.
+ * The DEFAULT for every card is "Previous Month" (the last fully-completed
+ * calendar month) — a stable, entirely-in-the-past window that needs no
+ * present-day cap. Both tiers expose it as their first preset, and the
+ * default*Window builders return it, so server prefetch and client initial
+ * state agree byte-for-byte (no hydration mismatch).
  *
  * These builders are PURE functions of a reference `now`, so the server
- * (prefetch) and the client (initial useState) compute identical default
- * windows — the same contract every other page in this app relies on.
+ * (prefetch) and the client (initial useState) compute identical windows —
+ * the same contract every other page in this app relies on.
  */
 
 export type DailyBucket = "day" | "week" | "month";
@@ -85,11 +87,20 @@ export function dailyPresets(now: Date = new Date()): RangePreset<DailyWindow>[]
     now.getMonth() + 1 >= 4 ? now.getFullYear() : now.getFullYear() - 1;
   const monthsBackFirst = (n: number) =>
     iso(new Date(now.getFullYear(), now.getMonth() - n, 1));
+  // Previous full calendar month. `new Date(y, month, 0)` is the last day of
+  // the month before `month`, so with the current 0-based month it lands on
+  // the last day of the previous month (handles year rollover natively).
+  const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
 
   return [
     {
-      label: "Last 7 Days",
-      window: { from: iso(addDays(now, -6)), to: today, bucket: "day" },
+      label: "Previous Month",
+      window: {
+        from: iso(prevMonthStart),
+        to: iso(prevMonthEnd),
+        bucket: "day",
+      },
     },
     {
       label: "Last 30 Days",
@@ -119,7 +130,7 @@ export function dailyPresets(now: Date = new Date()): RangePreset<DailyWindow>[]
 }
 
 export function defaultDailyWindow(now: Date = new Date()): DailyWindow {
-  return dailyPresets(now)[1].window; // Last 30 Days
+  return dailyPresets(now)[0].window; // Previous Month
 }
 
 export function activeDailyPreset(w: DailyWindow, now: Date = new Date()): number {
@@ -144,8 +155,18 @@ export function monthlyPresets(
     return { fromMonth: month, fromYear: year };
   };
   const fyStart = cm >= 4 ? cy : cy - 1;
+  const prev = fromMonthOrd(monthOrd(cm, cy) - 1);
 
   return [
+    {
+      label: "Previous Month",
+      window: {
+        fromMonth: prev.month,
+        fromYear: prev.year,
+        toMonth: prev.month,
+        toYear: prev.year,
+      },
+    },
     { label: "This Month", window: { ...back(0), ...to } },
     { label: "Last 3 Months", window: { ...back(2), ...to } },
     { label: "Last 6 Months", window: { ...back(5), ...to } },
@@ -156,7 +177,7 @@ export function monthlyPresets(
 }
 
 export function defaultMonthlyWindow(now: Date = new Date()): MonthlyWindow {
-  return monthlyPresets(now)[2].window; // Last 6 Months
+  return monthlyPresets(now)[0].window; // Previous Month
 }
 
 export function activeMonthlyPreset(
