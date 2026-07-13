@@ -2,9 +2,10 @@
  * Report — Tour fetch (per-city day sums over a monthly window).
  *
  * Wraps get_employee_tour_series (migration 0023): one row per city, days
- * summed across the window. Feeds the Tour radar (or a horizontal-bar
- * fallback when there are too many cities to read on a radar). The derived
- * totals give the "cities covered vs planned" headline the card shows.
+ * summed across the window. Feeds the Tour bullet list (one fixed-height
+ * row per city; the card scrolls once the list outgrows the chart area).
+ * The derived totals give the "cities covered vs planned" headline the
+ * card shows.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
