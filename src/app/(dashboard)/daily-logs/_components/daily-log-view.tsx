@@ -9,11 +9,17 @@ import {
   CalendarDays,
   Save,
   Loader2,
-  Search,
   Target,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Toolbar,
+  ToolbarGroup,
+  ToolbarSearch,
+  ToolbarSeparator,
+  ToolbarSpinner,
+} from "@/components/toolbar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -606,43 +612,34 @@ export function DailyLogView({
     <div className="flex h-full min-h-0 flex-col gap-4">
       {/* ── Toolbar ──
        *  Layout (left → right):
-       *    [Search input (flex-1)] [Date selector] [Set Targets] [Save]
+       *    [Search (flex-1)] [Date stepper] | [Set Targets] [Save]
        *  The toolbar sits OUTSIDE the dim/disable Card below, so all of
        *  these controls remain interactive while the table dims to 50 %
        *  during a fetch or in-flight navigation. The date selector
        *  receives `dirty.size` directly since it now lives in the same
        *  component tree. */}
-      <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_1px_2px_0_rgba(15,23,42,0.04)] transition-all duration-200 hover:shadow-[0_4px_16px_-6px_rgba(79,70,229,0.15)]">
-        <div className="relative flex-1 max-w-sm min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            id="daily-logs-search-input"
-            placeholder="Search employees..."
-            value={searchFilter}
-            onChange={(e) => setSearchFilter(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-
-        <div className="flex flex-wrap items-center justify-end gap-3">
+      <Toolbar>
+        <ToolbarSearch
+          id="daily-logs-search-input"
+          value={searchFilter}
+          onValueChange={setSearchFilter}
+          placeholder="Search employees…"
+          className="min-w-[200px] max-w-sm flex-1"
+        />
+        <ToolbarGroup className="ml-auto justify-end">
           {/* Cross-date refetch indicator. Fires on EITHER the in-flight
            *  router transition (the moment a Prev/Next/calendar click
            *  kicks off, before the new RSC has arrived) OR the TanStack
            *  Query refetch that follows. Hidden while saving — the Save
            *  button has its own inline spinner that takes precedence. */}
-          {(isFetching || isNavigating) && !isSaving && (
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          )}
+          <ToolbarSpinner show={(isFetching || isNavigating) && !isSaving} />
 
           <DailyLogDateSelector date={date} dirtyCount={dirty.size} />
 
-          {/* Subtle divider keeps the date controls visually distinct
-           *  from the action buttons that follow. */}
+          {/* Hairline keeps the date controls visually distinct from the
+           *  action buttons that follow. */}
           {(canEditTargets || (canEdit && dirty.size > 0)) && (
-            <span
-              aria-hidden
-              className="hidden sm:block h-6 w-px bg-slate-200 dark:bg-slate-700"
-            />
+            <ToolbarSeparator />
           )}
 
           {canEditTargets && (
@@ -651,8 +648,9 @@ export function DailyLogView({
               size="sm"
               onClick={() => setBulkDialogOpen(true)}
               disabled={isSaving}
+              className="h-9 gap-1.5 rounded-lg border-slate-200 bg-white px-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all hover:border-slate-300 hover:bg-slate-50"
             >
-              <Target className="mr-2 h-4 w-4" />
+              <Target className="h-4 w-4 text-indigo-500/80" />
               Set Targets
             </Button>
           )}
@@ -662,18 +660,18 @@ export function DailyLogView({
               onClick={handleSave}
               disabled={isSaving}
               size="sm"
-              className="shadow-sm"
+              className="h-9 gap-1.5 rounded-lg px-3 shadow-[0_1px_2px_rgba(15,23,42,0.15),0_4px_12px_-4px_rgba(79,70,229,0.45)]"
             >
               {isSaving ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Save className="mr-2 h-4 w-4" />
+                <Save className="h-4 w-4" />
               )}
               {isSaving ? "Saving..." : `Save Changes (${dirty.size})`}
             </Button>
           )}
-        </div>
-      </div>
+        </ToolbarGroup>
+      </Toolbar>
 
       {/* ── Data Grid ── */}
       <Card

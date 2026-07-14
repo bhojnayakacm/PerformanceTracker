@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { navigationPendingStore } from "@/lib/navigation-pending";
+import { selectableYears } from "@/lib/date-bounds";
 
 const MONTHS_FULL = [
   "January",
@@ -138,10 +139,7 @@ export function MonthRangeSelector({
     }
   }, [open, fromMonth, fromYear, toMonth, toYear]);
 
-  const years = useMemo(() => {
-    const cy = new Date().getFullYear();
-    return Array.from({ length: 7 }, (_, i) => cy - 4 + i);
-  }, []);
+  const years = useMemo(() => selectableYears(), []);
 
   const isInverted = ord(draftFrom) > ord(draftTo);
 
@@ -204,10 +202,26 @@ export function MonthRangeSelector({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         render={
-          <Button variant="outline" size="sm" className="h-9 gap-2 px-3">
-            <CalendarRange className="h-4 w-4 text-primary/60" />
-            <span className="font-medium tracking-tight">{triggerLabel}</span>
-            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+          <Button
+            variant="outline"
+            size="sm"
+            className={cn(
+              "h-9 gap-2 rounded-lg border-slate-200 bg-white px-3",
+              "shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all",
+              "hover:border-slate-300 hover:bg-slate-50",
+              open && "border-indigo-300 ring-4 ring-indigo-500/10",
+            )}
+          >
+            <CalendarRange className="h-4 w-4 text-indigo-500/80" />
+            <span className="font-medium tracking-tight tabular-nums">
+              {triggerLabel}
+            </span>
+            <ChevronDown
+              className={cn(
+                "h-3.5 w-3.5 text-slate-400 transition-transform duration-200",
+                open && "rotate-180",
+              )}
+            />
           </Button>
         }
       />

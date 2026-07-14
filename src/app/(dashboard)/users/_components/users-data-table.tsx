@@ -10,10 +10,10 @@ import {
   type Row,
   type SortingState,
 } from "@tanstack/react-table";
-import { Search, ShieldPlus, UserCog } from "lucide-react";
+import { ShieldPlus, UserCog } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Toolbar, ToolbarSearch } from "@/components/toolbar";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   TableBody,
@@ -149,18 +149,16 @@ export function UsersDataTable({
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
       {/* Toolbar */}
-      <div className="shrink-0 flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_1px_2px_0_rgba(15,23,42,0.04)] transition-all duration-200 hover:shadow-[0_4px_16px_-6px_rgba(79,70,229,0.15)]">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search by name or role..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            className="pl-9"
-          />
-        </div>
+      <Toolbar>
+        <ToolbarSearch
+          value={globalFilter}
+          onValueChange={setGlobalFilter}
+          placeholder="Search by name or role…"
+          className="max-w-sm flex-1"
+        />
         <Button
           variant="outline"
+          className="ml-auto h-9 gap-1.5 rounded-lg border-slate-200 bg-white px-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all hover:border-slate-300 hover:bg-slate-50"
           onClick={() =>
             toast.info("User invitations coming soon.", {
               description:
@@ -168,10 +166,10 @@ export function UsersDataTable({
             })
           }
         >
-          <ShieldPlus className="mr-2 h-4 w-4" />
+          <ShieldPlus className="h-4 w-4 text-indigo-500/80" />
           Invite User
         </Button>
-      </div>
+      </Toolbar>
 
       {/* Table */}
       <Card className="flex-1 min-h-0 flex flex-col border-0 py-0 gap-0 rounded-2xl bg-white ring-1 ring-slate-200 shadow-[0_4px_24px_-12px_rgba(79,70,229,0.12)] overflow-hidden transition-all duration-200 hover:shadow-[0_6px_28px_-10px_rgba(79,70,229,0.18)]">

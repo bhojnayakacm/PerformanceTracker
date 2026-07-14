@@ -75,15 +75,25 @@ export function ReportEmployeeSelector({
           <Button
             variant="outline"
             size="sm"
-            className="h-9 w-full justify-between gap-2 px-3 sm:w-72"
+            className={cn(
+              "h-9 w-full justify-between gap-2 rounded-lg border-slate-200 bg-white px-3 sm:w-72",
+              "shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all",
+              "hover:border-slate-300 hover:bg-slate-50",
+              open && "border-indigo-300 ring-4 ring-indigo-500/10",
+            )}
           >
             <span className="flex min-w-0 items-center gap-2">
               <UserRound className="h-4 w-4 shrink-0 text-indigo-500/70" />
-              <span className="truncate">
+              <span
+                className={cn(
+                  "truncate",
+                  selected ? "text-slate-800" : "text-slate-500",
+                )}
+              >
                 {selected ? selected.name : "Select an employee…"}
               </span>
             </span>
-            <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-slate-400" />
           </Button>
         }
       />

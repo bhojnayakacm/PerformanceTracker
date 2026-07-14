@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/select";
 import type { Employee } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { selectableYears } from "@/lib/date-bounds";
 import { bulkSetMonthlyTargets } from "../actions";
 
 const MONTHS = [
@@ -174,8 +175,7 @@ export function BulkTargetsDialog({
     return () => document.removeEventListener("keydown", handler, true);
   }, [dropdownOpen]);
 
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
+  const years = selectableYears();
 
   const filteredEmployees = useMemo(() => {
     if (!employeeSearch) return employees;

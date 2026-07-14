@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
+import { dataEpochDate, selectableYears } from "@/lib/date-bounds";
 import {
   dailyPresets,
   dailyWindowFromDates,
@@ -273,10 +274,9 @@ function DailyCustomPicker({
   onApply: (w: DailyWindow) => void;
 }) {
   const today = useMemo(() => new Date(), []);
-  const startMonth = useMemo(
-    () => new Date(today.getFullYear() - 5, 0, 1),
-    [today],
-  );
+  // Floor at the data epoch; the cap stays at `today` — this picker ranges
+  // over logged actuals, which can't exist in the future.
+  const startMonth = useMemo(() => dataEpochDate(), []);
   const [range, setRange] = useState<DateRange | undefined>(() => ({
     from: new Date(`${initial.from}T00:00:00`),
     to: new Date(`${initial.to}T00:00:00`),
@@ -336,10 +336,7 @@ function MonthlyCustomPicker({
     year: initial.toYear,
   });
 
-  const years = useMemo(() => {
-    const cy = new Date().getFullYear();
-    return Array.from({ length: 7 }, (_, i) => cy - 5 + i); // cy-5 … cy+1
-  }, []);
+  const years = useMemo(() => selectableYears(), []);
 
   const inverted = monthOrd(from.month, from.year) > monthOrd(to.month, to.year);
   const spanMonths =

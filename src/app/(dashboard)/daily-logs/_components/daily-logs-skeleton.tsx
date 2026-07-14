@@ -7,14 +7,13 @@ export function DailyLogsSkeleton() {
     <div className="flex h-full min-h-0 flex-col gap-4">
       {/* Toolbar — matches the live layout:
        *    [Search] [Prev] [Date display] [Next] [Set Targets] */}
-      <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_1px_2px_0_rgba(15,23,42,0.04)]">
-        <Skeleton className="h-9 w-64 rounded-md" />
-        <div className="flex items-center gap-3">
-          <Skeleton className="h-9 w-9 rounded-md" />
-          <Skeleton className="h-9 w-44 rounded-md" />
-          <Skeleton className="h-9 w-9 rounded-md" />
+      <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white/85 p-3 backdrop-blur-md shadow-[0_1px_2px_rgba(15,23,42,0.04),0_12px_32px_-20px_rgba(79,70,229,0.25)]">
+        <Skeleton className="h-9 w-64 rounded-lg" />
+        <div className="flex items-center gap-2">
+          {/* Fused date stepper reads as one control now */}
+          <Skeleton className="h-9 w-64 rounded-lg" />
           <span aria-hidden className="hidden sm:block h-6 w-px bg-slate-200" />
-          <Skeleton className="h-9 w-28 rounded-md" />
+          <Skeleton className="h-9 w-28 rounded-lg" />
         </div>
       </div>
 

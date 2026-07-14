@@ -9,8 +9,7 @@ import {
   type Row,
   type SortingState,
 } from "@tanstack/react-table";
-import { Search, CalendarDays, Building2, Loader2 } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { CalendarDays, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -41,6 +40,13 @@ import { getColumns } from "./columns";
 import { EmployeeDetailDialog } from "./employee-detail-dialog";
 import { ManageCitiesDialog } from "./manage-cities-dialog";
 import { MonthSelector } from "@/components/month-selector";
+import {
+  Toolbar,
+  ToolbarGroup,
+  ToolbarSearch,
+  ToolbarSeparator,
+  ToolbarSpinner,
+} from "@/components/toolbar";
 
 const MONTHLY_DATA_ORDER_KEY = "monthly_data_custom_order";
 const DRAG_HANDLE_WIDTH = 40;
@@ -196,39 +202,35 @@ export function PerformanceGrid({
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
       {/* Toolbar */}
-      <div className="shrink-0 flex items-center justify-between gap-3 flex-wrap rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_1px_2px_0_rgba(15,23,42,0.04)] transition-all duration-200 hover:shadow-[0_4px_16px_-6px_rgba(79,70,229,0.15)]">
-        <div className="relative flex-1 max-w-sm min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search employees..."
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            className="pl-9"
-          />
-          {isPending && (
-            <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
-          )}
-        </div>
-        <div className="flex items-center gap-2">
+      <Toolbar>
+        <ToolbarSearch
+          value={inputValue}
+          onValueChange={setInputValue}
+          placeholder="Search employees…"
+          isPending={isPending}
+          className="min-w-[200px] max-w-sm flex-1"
+        />
+        <ToolbarGroup className="ml-auto">
           {/* Non-debounce loading badge — fires on EITHER an in-flight
            *  router transition (Prev/Next/month/year click, before the
            *  new RSC has arrived) OR the TanStack Query refetch that
            *  follows. Hidden when isPending is already firing (the
-           *  search input has its own internal spinner in that case,
+           *  search field shows its own inline spinner in that case,
            *  so doubling up would be visual noise). */}
-          {(isFetching || isNavigating) && !isPending && (
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          )}
+          <ToolbarSpinner show={(isFetching || isNavigating) && !isPending} />
           {userRole === "super_admin" && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 gap-1.5"
-              onClick={() => setManageCitiesOpen(true)}
-            >
-              <Building2 className="h-4 w-4" />
-              Manage Cities
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 gap-1.5 rounded-lg border-slate-200 bg-white px-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all hover:border-slate-300 hover:bg-slate-50"
+                onClick={() => setManageCitiesOpen(true)}
+              >
+                <Building2 className="h-4 w-4 text-indigo-500/80" />
+                Manage Cities
+              </Button>
+              <ToolbarSeparator />
+            </>
           )}
           <MonthSelector
             month={month}
@@ -236,8 +238,8 @@ export function PerformanceGrid({
             basePath="/monthly-data"
             getExtraParams={() => ({ query: inputValue.trim() })}
           />
-        </div>
-      </div>
+        </ToolbarGroup>
+      </Toolbar>
 
       {/* Table */}
       <Card className={cn("flex-1 min-h-0 flex flex-col border-0 py-0 gap-0 rounded-2xl bg-white ring-1 ring-slate-200 shadow-[0_4px_24px_-12px_rgba(79,70,229,0.12)] overflow-hidden transition-all duration-200 hover:shadow-[0_6px_28px_-10px_rgba(79,70,229,0.18)]", showOverlay && "opacity-50 pointer-events-none transition-opacity")}>
