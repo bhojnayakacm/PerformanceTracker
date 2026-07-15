@@ -263,27 +263,36 @@ export function ImportWizard() {
         city_tours: importCityTours,
       };
 
-      // Forward the exact CSV header row so the server action can build a
-      // partial-upsert payload: columns the user dropped from the file are
-      // omitted from the Supabase payload, which preserves the existing DB
-      // values on ON CONFLICT UPDATE. Empty cells within a present column
-      // still fall through to the Zod default (0 / "").
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const res = await actions[selectedModule](validRows as any, headers);
+      try {
+        // Forward the exact CSV header row so the server action can build a
+        // partial-upsert payload: columns the user dropped from the file are
+        // omitted from the Supabase payload, which preserves the existing DB
+        // values on ON CONFLICT UPDATE. Empty cells within a present column
+        // still fall through to the Zod default (0 / "").
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const res = await actions[selectedModule](validRows as any, headers);
 
-      if ("error" in res) {
-        toast.error(res.error);
-        return;
-      }
+        if ("error" in res) {
+          toast.error(res.error);
+          return;
+        }
 
-      setResult(res);
-      setStep("result");
+        setResult(res);
+        setStep("result");
 
-      if (res.failed === 0) {
-        toast.success(`Successfully imported ${res.imported} records.`);
-      } else {
-        toast.warning(
-          `Imported ${res.imported} records. ${res.failed} failed.`,
+        if (res.failed === 0) {
+          toast.success(`Successfully imported ${res.imported} records.`);
+        } else {
+          toast.warning(
+            `Imported ${res.imported} records. ${res.failed} failed.`,
+          );
+        }
+      } catch {
+        // The action rejected before our server code ran (413 body cap,
+        // network drop, stale deployment) — Next.js masks the real error in
+        // production, so surface a stable, actionable message instead.
+        toast.error(
+          "Import failed to reach the server. The file may be too large, or the connection dropped — please try again.",
         );
       }
     });

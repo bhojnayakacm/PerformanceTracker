@@ -149,20 +149,29 @@ export function CityPoolImport({
     // authoritatively and reports the real inserted/skipped split.
     const all = [...preview.newCities, ...preview.duplicates];
     startTransition(async () => {
-      const res = await importCityPool(all);
-      if ("error" in res) {
-        toast.error(res.error);
-        return;
-      }
-      setResult(res);
-      setSessionAdded((prev) => [...prev, ...res.insertedNames]);
-      setStep("result");
-      if (res.inserted > 0) {
-        toast.success(
-          `Added ${res.inserted} ${res.inserted === 1 ? "city" : "cities"} to the pool.`,
+      try {
+        const res = await importCityPool(all);
+        if ("error" in res) {
+          toast.error(res.error);
+          return;
+        }
+        setResult(res);
+        setSessionAdded((prev) => [...prev, ...res.insertedNames]);
+        setStep("result");
+        if (res.inserted > 0) {
+          toast.success(
+            `Added ${res.inserted} ${res.inserted === 1 ? "city" : "cities"} to the pool.`,
+          );
+        } else {
+          toast.info("Nothing added — every city was already in the pool.");
+        }
+      } catch {
+        // The action rejected before our server code ran (413 body cap,
+        // network drop, stale deployment) — Next.js masks the real error in
+        // production, so surface a stable, actionable message instead.
+        toast.error(
+          "Import failed to reach the server. The list may be too large, or the connection dropped — please try again.",
         );
-      } else {
-        toast.info("Nothing added — every city was already in the pool.");
       }
     });
   }

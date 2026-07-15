@@ -10,7 +10,14 @@ const withSerwist = withSerwistInit({
 });
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  experimental: {
+    serverActions: {
+      // Bulk imports post parsed spreadsheet rows to Server Actions; the 1 MB
+      // default 413'd in production. 5 MB pairs with FileDropzone's 4.5 MB
+      // client-side cap, leaving headroom for JSON serialization overhead.
+      bodySizeLimit: "5mb",
+    },
+  },
 };
 
 export default withSerwist(nextConfig);
