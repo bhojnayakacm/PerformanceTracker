@@ -50,13 +50,18 @@ import {
   type MonthlyWindow,
 } from "../_lib/report-ranges";
 
-type Props =
+type Props = {
+  /** Override the trigger button's classes — the Compare toolbars pass h-9 to
+   *  match the toolbar control height; the card headers keep the default h-8. */
+  triggerClassName?: string;
+} & (
   | { mode: "daily"; window: DailyWindow; onChange: (w: DailyWindow) => void }
   | {
       mode: "monthly";
       window: MonthlyWindow;
       onChange: (w: MonthlyWindow) => void;
-    };
+    }
+);
 
 const MONTHS_FULL = [
   "January",
@@ -132,7 +137,10 @@ export function MetricRangeFilter(props: Props) {
           <Button
             variant="outline"
             size="sm"
-            className="h-8 max-w-[190px] gap-1.5 px-2.5 text-xs font-medium"
+            className={cn(
+              "h-8 max-w-[190px] gap-1.5 px-2.5 text-xs font-medium",
+              props.triggerClassName,
+            )}
           >
             <CalendarRange className="h-3.5 w-3.5 shrink-0 text-indigo-500/70" />
             <span className="truncate tracking-tight">{label}</span>

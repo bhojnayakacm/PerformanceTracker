@@ -5,6 +5,7 @@ import { UserRoundSearch } from "lucide-react";
 import { getAuthUser } from "@/lib/queries/auth";
 import { getQueryClient } from "@/lib/query-client";
 import { getEmployeesForUser } from "@/lib/queries/employees";
+import { Toolbar } from "@/components/toolbar";
 import { ReportEmployeeSelector } from "./_components/report-employee-selector";
 import { ReportGrid, ReportGridSkeleton } from "./_components/report-grid";
 import {
@@ -19,12 +20,12 @@ import { fetchTourSeries, tourSeriesQueryKey } from "./_lib/fetch-tour-series";
 import { defaultDailyWindow, defaultMonthlyWindow } from "./_lib/report-ranges";
 
 /**
- * Employee Report — a single-employee analytics deep-dive.
- *
- * The header + employee selector paint immediately; the six metric cards
- * stream behind a Suspense boundary once each card's default-window RPC
- * resolves. Every card then owns its OWN local time filter, so different
- * metrics can be analysed across different horizons simultaneously.
+ * Analytics · Overview — the single-employee deep-dive (the suite's home tab;
+ * the shared title + pill-nav live in report/layout.tsx). The employee selector
+ * paints immediately in its Toolbar; the six metric cards stream behind a
+ * Suspense boundary once each card's default-window RPC resolves. Every card
+ * then owns its OWN local time filter, so different metrics can be analysed
+ * across different horizons simultaneously.
  *
  * The selected employee is validated against the caller's roster
  * (getEmployeesForUser) both here and via the selector's option list, so a
@@ -53,20 +54,15 @@ export default async function ReportPage({
     employeeId && options.some((o) => o.id === employeeId) ? employeeId : null;
 
   return (
-    <div className="space-y-8">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            Employee Report
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            A deep-dive into one employee&rsquo;s performance — each metric on
-            its own timeline.
-          </p>
+    <div className="space-y-6">
+      <Toolbar>
+        <span className="text-sm font-medium text-slate-600">
+          Individual overview
+        </span>
+        <div className="ml-auto">
+          <ReportEmployeeSelector employees={options} selectedId={selectedId} />
         </div>
-
-        <ReportEmployeeSelector employees={options} selectedId={selectedId} />
-      </header>
+      </Toolbar>
 
       {selectedId ? (
         <Suspense fallback={<ReportGridSkeleton />}>

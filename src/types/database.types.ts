@@ -492,6 +492,73 @@ export type Database = {
           actual_days: number
         }[]
       }
+      get_comparative_meetings_series: {
+        Args: {
+          _employee_ids: string[]
+          _from: string
+          _to: string
+          _bucket?: string
+        }
+        Returns: {
+          employee_id: string
+          bucket_start: string
+          architect_meetings: number
+          client_meetings: number
+          site_visits: number
+          meetings: number
+          calls: number
+          target_meetings: number
+          target_calls: number
+        }[]
+      }
+      get_comparative_monthly_series: {
+        Args: {
+          _employee_ids: string[]
+          _from_month: number
+          _from_year: number
+          _to_month: number
+          _to_year: number
+        }
+        Returns: {
+          employee_id: string
+          month: number
+          year: number
+          commercial_project: number
+          hotel_project: number
+          project_2: number
+          tile: number
+          retail: number
+          return_sqft: number
+          net_sale: number
+          dispatched_sqft: number
+          target_dispatched_sqft: number
+          client_visits: number
+          target_client_visits: number
+          conversions: number
+          salary: number
+          tada: number
+          incentive: number
+          vendor_costing: number
+          sales_promotion: number
+          total_costing: number
+        }[]
+      }
+      get_comparative_tour_series: {
+        Args: {
+          _employee_ids: string[]
+          _from_month: number
+          _from_year: number
+          _to_month: number
+          _to_year: number
+        }
+        Returns: {
+          employee_id: string
+          target_days: number
+          actual_days: number
+          cities_covered: number
+          cities_planned: number
+        }[]
+      }
       bulk_add_cities: {
         Args: { _names: string[] }
         Returns: {
