@@ -41,8 +41,6 @@ import {
 import {
   applyAttainmentFilter,
   ATTAINMENT_ALL,
-  MAX_COMPARE,
-  SERIES_PALETTE,
   sumColumn,
   teamAttainment,
   type AttainmentRange,
@@ -109,10 +107,12 @@ const COLUMNS: CompareColumn[] = [
 export function TourCompare({
   employees,
   selectedIds,
+  isAllScope,
   userId,
 }: {
   employees: MultiOption[];
   selectedIds: string[];
+  isAllScope: boolean;
   userId: string;
 }) {
   const supabase = useMemo(() => createClient(), []);
@@ -133,7 +133,9 @@ export function TourCompare({
     if (!data) return [];
     const byId = new Map(data.rows.map((r) => [r.employeeId, r]));
     const metaById = new Map(employees.map((e) => [e.id, e]));
-    return selectedIds.slice(0, MAX_COMPARE).map((id, i) => {
+    // No cap — the table ranks the whole selection. Tour has no trend chart, so
+    // no plotted subset and no colour allocation are needed here at all.
+    return selectedIds.map((id, i) => {
       const row = byId.get(id);
       const meta = metaById.get(id);
       const actual = row?.actualDays ?? 0;
@@ -143,7 +145,6 @@ export function TourCompare({
         employeeId: id,
         name: meta?.name ?? "Unknown",
         empId: meta?.emp_id ?? "",
-        color: SERIES_PALETTE[i],
         points: [],
         total: actual,
         target,
@@ -187,6 +188,7 @@ export function TourCompare({
       description="Tour-day attainment & city coverage, head to head"
       employees={employees}
       selectedIds={selectedIds}
+      isAllScope={isAllScope}
       isFetching={isFetching}
       visibleCount={visible.length}
       windowLabel={monthlyWindowLabel(window)}

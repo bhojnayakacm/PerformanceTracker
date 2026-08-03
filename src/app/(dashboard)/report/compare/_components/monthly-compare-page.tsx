@@ -22,7 +22,8 @@ export async function MonthlyComparePage({
   measure: MonthlyMeasure;
   idsRaw: string | undefined;
 }) {
-  const { auth, options, selectedIds } = await resolveCompareContext(idsRaw);
+  const { auth, options, selectedIds, isAllScope } =
+    await resolveCompareContext(idsRaw);
 
   const queryClient = getQueryClient();
   if (selectedIds.length > 0) {
@@ -43,6 +44,7 @@ export async function MonthlyComparePage({
         measure={measure}
         employees={options}
         selectedIds={selectedIds}
+        isAllScope={isAllScope}
         userId={auth.id}
       />
     </HydrationBoundary>

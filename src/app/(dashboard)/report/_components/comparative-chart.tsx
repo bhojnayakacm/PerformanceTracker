@@ -2,15 +2,17 @@
 
 /**
  * The trend layer of a Compare view — a multi-line time series, one line per
- * employee, shown BELOW the rich breakdown table (management reads the numbers
- * first; the shape of the month is supporting context).
+ * PLOTTED employee, shown BELOW the rich breakdown table (management reads the
+ * numbers first; the shape of the month is supporting context).
  *
- * The legend is interactive: clicking a name mutes that line, so an admin
- * comparing the full eight can isolate two without changing the selection —
- * which keeps the table, the URL and the colour slots untouched.
+ * Receives only the ≤MAX_PLOTTED series the parent selected via auto/pinning,
+ * so this component never has to think about the cap. The legend is interactive:
+ * clicking a name mutes that line, so someone comparing the full eight can
+ * isolate two without changing the pins, the table, or the URL.
  *
- * Colour comes from the series (fixed by selection slot); this component never
- * re-assigns it, so muting or filtering never repaints a survivor.
+ * Colour arrives as `colorById`, allocated per plotted employee by the parent —
+ * this component never assigns it, so muting or re-sorting never repaints a
+ * survivor.
  */
 
 import {
@@ -33,11 +35,14 @@ import { toChartRows, type ComparativeSeries } from "../_lib/comparative";
 export function ComparativeChart({
   series,
   labels,
+  colorById,
   valueFormat,
   axisFormat = fmtCompact,
 }: {
+  /** The plotted subset, in colour-slot order. */
   series: ComparativeSeries[];
   labels: string[];
+  colorById: Map<string, string>;
   /** Formats a value in the tooltip (e.g. "₹1.2L", "12.5%"). */
   valueFormat: (n: number) => string;
   /** Formats a y-axis tick (compact by default). */
@@ -61,19 +66,24 @@ export function ComparativeChart({
 
   const config = useMemo(() => {
     const c: ChartConfig = {};
-    for (const s of series) c[s.key] = { label: s.name, color: s.color };
+    for (const s of series) {
+      c[s.key] = { label: s.name, color: colorById.get(s.employeeId) };
+    }
     return c;
-  }, [series]);
+  }, [series, colorById]);
 
-  // Slot-key → name/colour lookups for the custom tooltip (payload is keyed by
+  // Series-key → name/colour lookups for the custom tooltip (payload is keyed by
   // the Recharts dataKey, e0…, not by employee).
   const nameByKey = useMemo(
     () => new Map(series.map((s) => [s.key, s.name])),
     [series],
   );
   const colorByKey = useMemo(
-    () => new Map(series.map((s) => [s.key, s.color])),
-    [series],
+    () =>
+      new Map(
+        series.map((s) => [s.key, colorById.get(s.employeeId) ?? "#94a3b8"]),
+      ),
+    [series, colorById],
   );
 
   const rows = useMemo(() => toChartRows(series, labels), [series, labels]);
@@ -98,7 +108,10 @@ export function ComparativeChart({
             >
               <span
                 className="h-2.5 w-2.5 rounded-full transition-opacity"
-                style={{ background: s.color, opacity: off ? 0.3 : 1 }}
+                style={{
+                  background: colorById.get(s.employeeId),
+                  opacity: off ? 0.3 : 1,
+                }}
               />
               <span className={cn(off && "line-through")}>{s.name}</span>
             </button>

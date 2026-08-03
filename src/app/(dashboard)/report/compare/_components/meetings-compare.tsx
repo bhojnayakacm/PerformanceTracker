@@ -86,10 +86,12 @@ const COLUMNS: CompareColumn[] = [
 export function MeetingsCompare({
   employees,
   selectedIds,
+  isAllScope,
   userId,
 }: {
   employees: MultiOption[];
   selectedIds: string[];
+  isAllScope: boolean;
   userId: string;
 }) {
   const supabase = useMemo(() => createClient(), []);
@@ -158,6 +160,7 @@ export function MeetingsCompare({
       description="Meetings & field activity, head to head"
       employees={employees}
       selectedIds={selectedIds}
+      isAllScope={isAllScope}
       isFetching={isFetching}
       visibleCount={visible.length}
       windowLabel={dailyWindowLabel(window)}

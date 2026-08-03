@@ -78,3 +78,52 @@ export function useNavigationPending(): boolean {
     getServerSnapshot,
   );
 }
+
+/* ── Route-level channel ───────────────────────────────────────────────
+ * A SECOND, deliberately separate signal for cross-ROUTE navigation (the
+ * user clicked a sidebar item or a nav tab and the pathname is about to
+ * change), as opposed to the in-page param transitions above.
+ *
+ * Why not reuse the store above: the two want opposite treatments. An
+ * in-page transition (switching compared employees) should dim only the
+ * affected cards — dimming the whole app for it would be noise. A route
+ * change should give whole-app feedback: top progress bar + a dimmed,
+ * non-interactive outgoing page. Keeping them apart means neither has to
+ * guess which kind of pending it is looking at.
+ *
+ * Not refcounted, unlike the store above: a route change is a single
+ * edge-triggered event with one obvious end (the new pathname commits),
+ * not a set of overlapping in-flight operations. `start()` is idempotent
+ * and `reset()` clears unconditionally.
+ */
+
+let routePending = false;
+const routeListeners = new Set<() => void>();
+
+export const routePendingStore = {
+  get: () => routePending,
+  start: () => {
+    if (routePending) return;
+    routePending = true;
+    routeListeners.forEach((l) => l());
+  },
+  reset: () => {
+    if (!routePending) return;
+    routePending = false;
+    routeListeners.forEach((l) => l());
+  },
+  subscribe: (l: () => void) => {
+    routeListeners.add(l);
+    return () => {
+      routeListeners.delete(l);
+    };
+  },
+};
+
+export function useRoutePending(): boolean {
+  return useSyncExternalStore(
+    routePendingStore.subscribe,
+    routePendingStore.get,
+    getServerSnapshot,
+  );
+}

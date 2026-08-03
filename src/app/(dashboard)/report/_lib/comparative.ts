@@ -3,22 +3,41 @@
  *
  * Every "Compare" page (Meetings, Dispatch, Visits, Conversion, Tour, Costing)
  * fetches a different RPC shape but funnels it through ONE normalized model:
- * a `ComparativeSeries[]` aligned to a shared label axis. The chart + leaderboard
- * components only ever see that model, so a new comparative metric is a thin
- * adapter (pick a field, pick a reducer) — never new chart code.
+ * a `ComparativeSeries[]` aligned to a shared label axis. The table + chart only
+ * ever see that model, so a new comparative metric is a thin adapter (pick a
+ * field, pick a reducer) — never new chart code.
  *
- * COLOUR is assigned by SELECTION SLOT (e0…e7), never by rank and never cycled:
- * the palette is the dataviz reference categorical order (CVD-optimized), which
- * validates on the app's white card surface for line + adjacent-bar forms. Three
- * slots sit under 3:1 contrast, so identity must never be colour-alone — the
- * always-present legend and the leaderboard's direct labels (name + value beside
- * each swatch) are that relief. The multi-select is capped at MAX_COMPARE so the
- * 9th series is impossible by construction, not folded to "Other" after the fact.
+ * TWO DIFFERENT CAPACITIES (the reason for two caps below)
+ * A table of 100 rows is useful — you sort it, you filter it, you find the three
+ * people under 50%. A chart of 100 lines is noise. So the TABLE and the
+ * ATTAINMENT FILTER operate on the entire selection (the whole roster by
+ * default), while the trend chart plots a bounded subset chosen via pinning.
+ *
+ * COLOUR therefore belongs to the PLOTTED subset, not to the selection: a colour
+ * in this UI means "this row is on the chart, in this colour". It's allocated by
+ * slot through `allocatePaletteSlots`, which preserves an employee's slot as
+ * others come and go — so colour follows the entity, never its rank, and pinning
+ * a ninth person never repaints the other eight. The palette itself is the
+ * dataviz reference categorical order (CVD-optimized), validated on the app's
+ * white card surface for line forms. Three slots sit under 3:1 contrast, so
+ * identity is never colour-alone: the chart legend and the table's own name
+ * column carry it.
  */
 
-/** Hard cap on employees compared at once — the palette has exactly this many
- *  CVD-safe slots, so the cap and the palette length are the same number. */
-export const MAX_COMPARE = 8;
+/**
+ * Chart cap. The palette has exactly this many CVD-safe slots, so the number of
+ * plottable series and the palette length are the same number by construction.
+ */
+export const MAX_PLOTTED = 8;
+
+/**
+ * Guard on how many ids an explicit `?ids=` selection may carry. This is a URL
+ * LENGTH limit, not a UX one: 60 UUIDs is already ~2.2 kB of query string, near
+ * the practical ceiling for proxies and server request lines. Selecting the
+ * whole roster doesn't go through here at all — it's represented by the ABSENCE
+ * of the param (see parseCompareIds), so company-wide analysis costs zero URL.
+ */
+export const MAX_EXPLICIT_IDS = 60;
 
 /**
  * Categorical order from the dataviz reference palette (light column). Assigned
@@ -42,12 +61,13 @@ export type EmployeeMeta = { id: string; name: string; emp_id: string };
 export type ComparativePoint = { label: string; value: number };
 
 export type ComparativeSeries = {
-  /** CSS-var-safe, slot-stable key (e0…e7) — the Recharts dataKey + config key. */
+  /** CSS-var-safe, stable key (e0, e1, …) — the Recharts dataKey + config key.
+   *  Derived from selection order, so it survives sorting and filtering.
+   *  NOTE: this is an identity key, NOT a colour slot — see allocatePaletteSlots. */
   key: string;
   employeeId: string;
   name: string;
   empId: string;
-  color: string;
   /** Values aligned to the shared label axis (missing buckets zero-filled). */
   points: ComparativePoint[];
   /** Window reduction for the headline column (a sum, or a derived rate). */
@@ -130,7 +150,9 @@ export function buildSeries<Row>(opts: BuildOpts<Row>): {
 
   const metaById = new Map(employees.map((e) => [e.id, e]));
 
-  const series = ids.slice(0, MAX_COMPARE).map((id, i) => {
+  // NO cap here — the table and the attainment filter want every selected
+  // employee. Bounding happens later, and only for the chart.
+  const series = ids.map((id, i) => {
     const empRows = byEmp.get(id) ?? [];
     const valueByKey = new Map<number | string, number>();
     for (const r of empRows) valueByKey.set(opts.sortKey(r), opts.value(r));
@@ -145,7 +167,6 @@ export function buildSeries<Row>(opts: BuildOpts<Row>): {
       employeeId: id,
       name: meta?.name ?? "Unknown",
       empId: meta?.emp_id ?? "",
-      color: SERIES_PALETTE[i],
       points,
       total,
       target,
@@ -170,7 +191,17 @@ export function toChartRows(
   });
 }
 
-/* ── URL id (de)serialization — shared by the multi-select + every page ── */
+/* ── URL scope model — shared by the multi-select + every page ───────────
+ *
+ * Three states, encoded so the common one costs nothing:
+ *   • param ABSENT  → the ENTIRE ROSTER. The default, and what management wants
+ *     when the question is "who in the company is under 50%". Crucially this
+ *     enumerates nothing in the URL, so a 200-person company is still a clean
+ *     `/report/compare/dispatch`.
+ *   • `?ids=a,b,c`  → that explicit subset, in that order.
+ *   • `?ids=`       → an explicit EMPTY selection (the user cleared it), which
+ *     is why the empty string and `undefined` must stay distinguishable.
+ */
 
 /** Parse `?ids=` into a validated, de-duped, capped id list in URL order. Any id
  *  outside the caller's roster is dropped, so a hand-typed param can't widen
@@ -188,12 +219,53 @@ export function parseCompareIds(
     if (!trimmed || seen.has(trimmed) || !allowed.has(trimmed)) continue;
     seen.add(trimmed);
     out.push(trimmed);
-    if (out.length >= MAX_COMPARE) break;
+    if (out.length >= MAX_EXPLICIT_IDS) break;
   }
   return out;
 }
 
 export const serializeCompareIds = (ids: string[]): string => ids.join(",");
+
+/* ── Chart plotting: which of the selected employees get a line ──────────── */
+
+/**
+ * Reconcile colour slots against the currently-plotted ids, PRESERVING the slot
+ * of anyone who was already plotted. Unpinning employee #2 must not shuffle #3
+ * into their colour — a chart where the meaning of "blue" changes as you toggle
+ * rows is unreadable. Freed slots go to newcomers, lowest first.
+ *
+ * Pure and idempotent: same `prev` + same `ids` always yields the same result,
+ * so it's safe to run during render with a ref as the carrier.
+ */
+export function allocatePaletteSlots(
+  prev: Map<string, number>,
+  ids: string[],
+): Map<string, number> {
+  const wanted = new Set(ids);
+  const next = new Map<string, number>();
+  const used = new Set<number>();
+
+  // Keep the slots of everyone still plotted.
+  for (const [id, slot] of prev) {
+    if (!wanted.has(id) || used.has(slot)) continue;
+    next.set(id, slot);
+    used.add(slot);
+  }
+  // Newcomers take the lowest free slot.
+  for (const id of ids) {
+    if (next.has(id)) continue;
+    let slot = 0;
+    while (used.has(slot)) slot += 1;
+    next.set(id, slot);
+    used.add(slot);
+  }
+  return next;
+}
+
+/** Colour for a plotted employee. Modulo is a formality — the plotted set is
+ *  capped at MAX_PLOTTED, which equals the palette length. */
+export const paletteColor = (slot: number): string =>
+  SERIES_PALETTE[slot % SERIES_PALETTE.length];
 
 /* ── Rich table column spec ─────────────────────────────────────────────
  * One shared table renders every metric; a metric contributes only this list.

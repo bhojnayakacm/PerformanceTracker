@@ -32,6 +32,7 @@ export function ComparativeShell({
   description,
   employees,
   selectedIds,
+  isAllScope,
   attainmentControl,
   rangeControl,
   windowLabel,
@@ -44,6 +45,7 @@ export function ComparativeShell({
   description: string;
   employees: MultiOption[];
   selectedIds: string[];
+  isAllScope: boolean;
   /** The metric's AttainmentFilter — omitted for metrics with no % measure. */
   attainmentControl?: ReactNode;
   /** The metric's MetricRangeFilter (daily or monthly). */
@@ -66,6 +68,7 @@ export function ComparativeShell({
           <ReportEmployeeMultiSelect
             employees={employees}
             selectedIds={selectedIds}
+            isAllScope={isAllScope}
           />
           {attainmentControl}
         </ToolbarGroup>

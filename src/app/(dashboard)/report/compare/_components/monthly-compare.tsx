@@ -278,11 +278,13 @@ export function MonthlyCompare({
   measure,
   employees,
   selectedIds,
+  isAllScope,
   userId,
 }: {
   measure: MonthlyMeasure;
   employees: MultiOption[];
   selectedIds: string[];
+  isAllScope: boolean;
   userId: string;
 }) {
   const spec = MEASURES[measure];
@@ -346,6 +348,7 @@ export function MonthlyCompare({
       description={spec.description}
       employees={employees}
       selectedIds={selectedIds}
+      isAllScope={isAllScope}
       isFetching={isFetching}
       visibleCount={visible.length}
       windowLabel={monthlyWindowLabel(window)}

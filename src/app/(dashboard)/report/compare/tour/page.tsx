@@ -14,7 +14,8 @@ export default async function CompareTourPage({
   searchParams: Promise<{ ids?: string }>;
 }) {
   const { ids } = await searchParams;
-  const { auth, options, selectedIds } = await resolveCompareContext(ids);
+  const { auth, options, selectedIds, isAllScope } =
+    await resolveCompareContext(ids);
 
   const queryClient = getQueryClient();
   if (selectedIds.length > 0) {
@@ -34,6 +35,7 @@ export default async function CompareTourPage({
       <TourCompare
         employees={options}
         selectedIds={selectedIds}
+        isAllScope={isAllScope}
         userId={auth.id}
       />
     </HydrationBoundary>
