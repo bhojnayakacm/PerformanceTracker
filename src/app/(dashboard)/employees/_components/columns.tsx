@@ -1,13 +1,20 @@
 "use client";
 
 import { type ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal, Pencil, ToggleRight } from "lucide-react";
+import {
+  ArrowUpDown,
+  MoreHorizontal,
+  Pencil,
+  ToggleRight,
+  Trash2,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DRAG_HANDLE_COL_ID } from "@/components/data-table/sortable-table";
@@ -17,6 +24,10 @@ import { getInitials, getAvatarColor, formatDoj } from "@/lib/utils";
 type ColumnActions = {
   onEdit: (employee: Employee) => void;
   onToggleStatus: (employee: Employee) => void;
+  /* Opens the confirmation dialog — never deletes directly. The destructive
+   * work is owned by the table so one AlertDialog instance can be driven by
+   * whichever row was chosen. */
+  onRequestDelete: (employee: Employee) => void;
 };
 
 export function getColumns(
@@ -237,6 +248,16 @@ export function getColumns(
               >
                 <ToggleRight className="mr-2 h-4 w-4" />
                 {employee.is_active ? "Deactivate" : "Activate"}
+              </DropdownMenuItem>
+              {/* Separated + destructive-tinted so a hard delete is never a
+                  neighbouring click to the reversible Deactivate above. */}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                variant="destructive"
+                onClick={() => actions.onRequestDelete(employee)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

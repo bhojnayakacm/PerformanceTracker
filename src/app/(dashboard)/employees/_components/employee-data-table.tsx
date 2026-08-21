@@ -10,9 +10,18 @@ import {
   type Row,
   type SortingState,
 } from "@tanstack/react-table";
-import { Plus, Users } from "lucide-react";
+import { Loader2, Plus, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Toolbar, ToolbarSearch } from "@/components/toolbar";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -33,7 +42,7 @@ import {
 } from "@/components/data-table/sortable-table";
 import { cn, getAvatarColor, getInitials } from "@/lib/utils";
 import type { Employee, UserRole } from "@/lib/types";
-import { toggleEmployeeStatus } from "../actions";
+import { deleteEmployee, toggleEmployeeStatus } from "../actions";
 import { getColumns } from "./columns";
 import { EmployeeFormDialog } from "./employee-form-dialog";
 
@@ -50,6 +59,12 @@ export function EmployeeDataTable({ data, userRole }: Props) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [, startTransition] = useTransition();
+  /* The row awaiting confirmation. Held here rather than per-row so a single
+   * AlertDialog instance serves the whole table — a dialog per row would mount
+   * hundreds of portals. Kept set while deleting so the name stays rendered
+   * during the closing animation. */
+  const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null);
+  const [isDeleting, startDeleteTransition] = useTransition();
 
   // id → Employee resolution map for the Reporting Manager column.
   // Memoised on the `data` array reference so the O(n) build runs once
@@ -69,6 +84,7 @@ export function EmployeeDataTable({ data, userRole }: Props) {
             setEditingEmployee(emp);
             setDialogOpen(true);
           },
+          onRequestDelete: (emp) => setDeleteTarget(emp),
           onToggleStatus: (emp) => {
             startTransition(async () => {
               const result = await toggleEmployeeStatus(emp.id, emp.is_active);
@@ -267,6 +283,67 @@ export function EmployeeDataTable({ data, userRole }: Props) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Single confirmation dialog, driven by whichever row was chosen */}
+      <AlertDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          // Ignore close attempts mid-flight so the row can't vanish from
+          // under an in-progress server action.
+          if (!open && !isDeleting) setDeleteTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete{" "}
+              <span className="font-medium text-foreground">
+                {deleteTarget?.name}
+              </span>{" "}
+              from the database. This action cannot be undone.
+              <span className="mt-2 block text-xs">
+                Employees with existing performance records can&rsquo;t be
+                deleted — deactivate them instead.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              disabled={isDeleting}
+              onClick={() => {
+                const target = deleteTarget;
+                if (!target) return;
+                startDeleteTransition(async () => {
+                  const result = await deleteEmployee(target.id);
+                  if ("error" in result) {
+                    // Stay open on failure: the message explains what to do
+                    // next, and closing would hide it behind the toast alone.
+                    toast.error(result.error);
+                    return;
+                  }
+                  toast.success(`${target.name} deleted`);
+                  setDeleteTarget(null);
+                });
+              }}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting…
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </>
+              )}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Shared dialog for Add / Edit */}
       <EmployeeFormDialog
