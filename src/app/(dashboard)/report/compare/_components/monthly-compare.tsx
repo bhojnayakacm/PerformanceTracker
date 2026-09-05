@@ -25,6 +25,7 @@ import {
   ComparativeNoMatch,
 } from "../../_components/comparative-shell";
 import { ComparativeViews } from "../../_components/comparative-views";
+import { ComparativeExportButton } from "../../_components/comparative-export-button";
 import { MetricRangeFilter } from "../../_components/metric-range-filter";
 import { AttainmentFilter } from "../../_components/attainment-filter";
 import {
@@ -44,8 +45,11 @@ import {
   monthlyWindowLabel,
   type MonthlyWindow,
 } from "../../_lib/report-ranges";
+import { useCompareSort } from "../../_lib/use-compare-sort";
+import { monthlyPeriodSlug } from "../../_lib/compare-export";
 import {
   applyAttainmentFilter,
+  attainmentRangeLabel,
   ATTAINMENT_ALL,
   buildSeries,
   CONVERSION_RATE_PRESETS,
@@ -105,6 +109,8 @@ const ATTAINMENT_COLUMN: CompareColumn = {
 
 type MeasureSpec = {
   title: string;
+  /** Filename fragment for exports, e.g. "Dispatch". */
+  slug: string;
   description: string;
   icon: LucideIcon;
   columns: CompareColumn[];
@@ -125,6 +131,7 @@ type MeasureSpec = {
 const MEASURES: Record<MonthlyMeasure, MeasureSpec> = {
   dispatch: {
     title: "Compare · Dispatch",
+    slug: "Dispatch",
     description: "Dispatched sqft by product line vs target, head to head",
     icon: Truck,
     value: (r) => r.dispatched,
@@ -156,6 +163,7 @@ const MEASURES: Record<MonthlyMeasure, MeasureSpec> = {
 
   visits: {
     title: "Compare · Client Visits",
+    slug: "Visits",
     description: "Client visits vs target, with what they converted to",
     icon: MapPin,
     value: (r) => r.clientVisits,
@@ -196,6 +204,7 @@ const MEASURES: Record<MonthlyMeasure, MeasureSpec> = {
 
   conversion: {
     title: "Compare · Conversion",
+    slug: "Conversion",
     description: "Conversion rate — conversions ÷ client visits",
     icon: Target,
     value: (r) => (r.clientVisits > 0 ? (r.conversions / r.clientVisits) * 100 : 0),
@@ -241,6 +250,7 @@ const MEASURES: Record<MonthlyMeasure, MeasureSpec> = {
 
   costing: {
     title: "Compare · Costing",
+    slug: "Costing",
     description: "Cost breakdown per employee (₹), head to head",
     icon: Wallet,
     value: (r) => r.totalCosting,
@@ -322,6 +332,11 @@ export function MonthlyCompare({
     [series, attainment],
   );
 
+  // Sort is owned here so the table, the chart's auto-plot and the toolbar's
+  // Export all read the same ordered array.
+  const { sort, onSort, sortSeries } = useCompareSort(spec.columns);
+  const rows = useMemo(() => sortSeries(visible), [sortSeries, visible]);
+
   const body =
     selectedIds.length === 0 ? (
       <ComparativeSelectPrompt />
@@ -333,7 +348,9 @@ export function MonthlyCompare({
       <ComparativeNoMatch onClear={() => setAttainment(ATTAINMENT_ALL)} />
     ) : (
       <ComparativeViews
-        series={visible}
+        series={rows}
+        sort={sort}
+        onSort={onSort}
         columns={spec.columns}
         labels={labels}
         valueFormat={spec.valueFormat}
@@ -361,6 +378,23 @@ export function MonthlyCompare({
             presets={spec.filter.presets}
           />
         ) : undefined
+      }
+      exportControl={
+        <ComparativeExportButton
+          disabled={rows.length === 0}
+          getPayload={() => ({
+            metricTitle: spec.title,
+            metricSlug: spec.slug,
+            periodSlug: monthlyPeriodSlug(window),
+            windowLabel: monthlyWindowLabel(window),
+            columns: spec.columns,
+            series: rows,
+            scopeLabel: isAllScope
+              ? "All employees (" + employees.length + ")"
+              : selectedIds.length + " selected",
+            filterLabel: attainmentRangeLabel(attainment),
+          })}
+        />
       }
       rangeControl={
         <MetricRangeFilter

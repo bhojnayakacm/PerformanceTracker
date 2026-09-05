@@ -17,9 +17,10 @@
  *     drops out of the attainment filter or the selection silently stops being
  *     plotted instead of haunting the chart.
  *
- * Sort state lives HERE rather than in the table because auto-plotting is
- * defined in terms of it — the table renders the order it's given and reports
- * header clicks back up.
+ * Sort is owned one level UP (useCompareSort in the metric component) and the
+ * series arrives pre-sorted, because three consumers need that same order: this
+ * table, the auto-plot below, and the toolbar's Export button — which lives
+ * outside this subtree entirely.
  *
  * Colour is allocated only to plotted employees, and slots are preserved across
  * pin/unpin (allocatePaletteSlots), so toggling one row never repaints the rest.
@@ -37,56 +38,35 @@ import {
   type CompareColumn,
   type ComparativeSeries,
 } from "../_lib/comparative";
-
-export type SortState = { key: string; dir: "asc" | "desc" };
+import type { SortState } from "../_lib/use-compare-sort";
 
 export function ComparativeViews({
   series,
   columns,
+  sort,
+  onSort,
   labels,
   valueFormat,
   axisFormat,
   /** Metrics with no time axis (Tour compares window totals) skip the chart. */
   showTrend = true,
 }: {
+  /** Already attainment-filtered AND sorted by the metric component. */
   series: ComparativeSeries[];
   columns: CompareColumn[];
+  sort: SortState;
+  onSort: (key: string) => void;
   labels: string[];
   valueFormat: (n: number) => string;
   axisFormat?: (n: number) => string;
   showTrend?: boolean;
 }) {
-  const headlineKey = useMemo(
-    () => columns.find((c) => c.emphasis)?.key ?? columns[0]?.key ?? "",
-    [columns],
-  );
-  const [sort, setSort] = useState<SortState>(() => ({
-    key: headlineKey,
-    dir: "desc",
-  }));
   /** null = auto (top of the current sort); an array = the user's own picks. */
   const [pinned, setPinned] = useState<string[] | null>(null);
   const [trendOpen, setTrendOpen] = useState(true);
 
-  const columnByKey = useMemo(
-    () => new Map(columns.map((c) => [c.key, c])),
-    [columns],
-  );
-
-  const sorted = useMemo(() => {
-    const col = columnByKey.get(sort.key);
-    if (!col) return series;
-    const dir = sort.dir === "asc" ? 1 : -1;
-    return [...series].sort((a, b) => {
-      const av = col.value(a);
-      const bv = col.value(b);
-      // Nulls always sink, regardless of direction.
-      if (av === null && bv === null) return a.name.localeCompare(b.name);
-      if (av === null) return 1;
-      if (bv === null) return -1;
-      return av === bv ? a.name.localeCompare(b.name) : (av - bv) * dir;
-    });
-  }, [series, sort, columnByKey]);
+  // Arrives pre-sorted; the alias keeps the auto-plot logic below readable.
+  const sorted = series;
 
   const canTrend = showTrend && labels.length > 1;
 
@@ -124,14 +104,6 @@ export function ComparativeViews({
     },
     [pinned, autoIds],
   );
-
-  const onSort = useCallback((key: string) => {
-    setSort((prev) =>
-      prev.key === key
-        ? { key, dir: prev.dir === "desc" ? "asc" : "desc" }
-        : { key, dir: "desc" },
-    );
-  }, []);
 
   /** Plotted series in slot order, so the legend reads in colour order. */
   const plottedSeries = useMemo(() => {

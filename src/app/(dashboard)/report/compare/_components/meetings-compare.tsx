@@ -21,6 +21,7 @@ import {
   ComparativeNoMatch,
 } from "../../_components/comparative-shell";
 import { ComparativeViews } from "../../_components/comparative-views";
+import { ComparativeExportButton } from "../../_components/comparative-export-button";
 import { MetricRangeFilter } from "../../_components/metric-range-filter";
 import { AttainmentFilter } from "../../_components/attainment-filter";
 import {
@@ -39,8 +40,11 @@ import {
   formatDailyLabel,
   type DailyWindow,
 } from "../../_lib/report-ranges";
+import { useCompareSort } from "../../_lib/use-compare-sort";
+import { dailyPeriodSlug } from "../../_lib/compare-export";
 import {
   applyAttainmentFilter,
+  attainmentRangeLabel,
   ATTAINMENT_ALL,
   buildSeries,
   teamAttainment,
@@ -135,6 +139,11 @@ export function MeetingsCompare({
     [series, attainment],
   );
 
+  // Sort is owned here so the table, the chart's auto-plot and the toolbar's
+  // Export all read the same ordered array.
+  const { sort, onSort, sortSeries } = useCompareSort(COLUMNS);
+  const rows = useMemo(() => sortSeries(visible), [sortSeries, visible]);
+
   const body =
     selectedIds.length === 0 ? (
       <ComparativeSelectPrompt />
@@ -146,7 +155,9 @@ export function MeetingsCompare({
       <ComparativeNoMatch onClear={() => setAttainment(ATTAINMENT_ALL)} />
     ) : (
       <ComparativeViews
-        series={visible}
+        series={rows}
+        sort={sort}
+        onSort={onSort}
         columns={COLUMNS}
         labels={labels}
         valueFormat={fmtNum}
@@ -166,6 +177,23 @@ export function MeetingsCompare({
       windowLabel={dailyWindowLabel(window)}
       attainmentControl={
         <AttainmentFilter value={attainment} onChange={setAttainment} />
+      }
+      exportControl={
+        <ComparativeExportButton
+          disabled={rows.length === 0}
+          getPayload={() => ({
+            metricTitle: "Compare · Meetings",
+            metricSlug: "Meetings",
+            periodSlug: dailyPeriodSlug(window),
+            windowLabel: dailyWindowLabel(window),
+            columns: COLUMNS,
+            series: rows,
+            scopeLabel: isAllScope
+              ? "All employees (" + employees.length + ")"
+              : selectedIds.length + " selected",
+            filterLabel: attainmentRangeLabel(attainment),
+          })}
+        />
       }
       rangeControl={
         <MetricRangeFilter

@@ -35,6 +35,7 @@ export function ComparativeShell({
   isAllScope,
   attainmentControl,
   rangeControl,
+  exportControl,
   windowLabel,
   isFetching,
   visibleCount,
@@ -50,6 +51,9 @@ export function ComparativeShell({
   attainmentControl?: ReactNode;
   /** The metric's MetricRangeFilter (daily or monthly). */
   rangeControl: ReactNode;
+  /** Export control. Rendered last, behind its own separator, because it is an
+   *  OUTPUT action rather than another filter. */
+  exportControl?: ReactNode;
   /** Human window label, shown as a chip once a selection exists. */
   windowLabel: string;
   isFetching: boolean;
@@ -76,6 +80,12 @@ export function ComparativeShell({
           <ToolbarSpinner show={isFetching && hasSelection} />
           <ToolbarSeparator />
           {rangeControl}
+          {exportControl && (
+            <>
+              <ToolbarSeparator />
+              {exportControl}
+            </>
+          )}
         </ToolbarGroup>
       </Toolbar>
 

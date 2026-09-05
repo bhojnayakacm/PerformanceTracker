@@ -22,6 +22,7 @@ import {
   ComparativeNoMatch,
 } from "../../_components/comparative-shell";
 import { ComparativeViews } from "../../_components/comparative-views";
+import { ComparativeExportButton } from "../../_components/comparative-export-button";
 import { MetricRangeFilter } from "../../_components/metric-range-filter";
 import { AttainmentFilter } from "../../_components/attainment-filter";
 import {
@@ -38,8 +39,11 @@ import {
   monthlyWindowLabel,
   type MonthlyWindow,
 } from "../../_lib/report-ranges";
+import { useCompareSort } from "../../_lib/use-compare-sort";
+import { monthlyPeriodSlug } from "../../_lib/compare-export";
 import {
   applyAttainmentFilter,
+  attainmentRangeLabel,
   ATTAINMENT_ALL,
   sumColumn,
   teamAttainment,
@@ -162,6 +166,11 @@ export function TourCompare({
     [series, attainment],
   );
 
+  // Sort is owned here so the table and the toolbar's Export read the same
+  // ordered array (Tour has no trend chart to auto-plot).
+  const { sort, onSort, sortSeries } = useCompareSort(COLUMNS);
+  const rows = useMemo(() => sortSeries(visible), [sortSeries, visible]);
+
   const body =
     selectedIds.length === 0 ? (
       <ComparativeSelectPrompt />
@@ -173,7 +182,9 @@ export function TourCompare({
       <ComparativeNoMatch onClear={() => setAttainment(ATTAINMENT_ALL)} />
     ) : (
       <ComparativeViews
-        series={visible}
+        series={rows}
+        sort={sort}
+        onSort={onSort}
         columns={COLUMNS}
         labels={[]}
         showTrend={false}
@@ -194,6 +205,23 @@ export function TourCompare({
       windowLabel={monthlyWindowLabel(window)}
       attainmentControl={
         <AttainmentFilter value={attainment} onChange={setAttainment} />
+      }
+      exportControl={
+        <ComparativeExportButton
+          disabled={rows.length === 0}
+          getPayload={() => ({
+            metricTitle: "Compare · Tour",
+            metricSlug: "Tour",
+            periodSlug: monthlyPeriodSlug(window),
+            windowLabel: monthlyWindowLabel(window),
+            columns: COLUMNS,
+            series: rows,
+            scopeLabel: isAllScope
+              ? "All employees (" + employees.length + ")"
+              : selectedIds.length + " selected",
+            filterLabel: attainmentRangeLabel(attainment),
+          })}
+        />
       }
       rangeControl={
         <MetricRangeFilter

@@ -28,7 +28,7 @@ import { ArrowDown, ArrowUp, ChevronsUpDown, Pin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { attainmentStatus, fmtPct, STATUS_TEXT } from "../_lib/report-format";
 import { sumColumn, type CompareColumn, type ComparativeSeries } from "../_lib/comparative";
-import type { SortState } from "./comparative-views";
+import type { SortState } from "../_lib/use-compare-sort";
 
 const STATUS_BAR: Record<"green" | "amber" | "red" | "neutral", string> = {
   green: "bg-emerald-500",
